@@ -363,9 +363,7 @@ test.describe("mobile", () => {
 		// The hero primer is first, but the bid form must come before the long details
 		// essay so nobody has to scroll past an essay to bid in the final minutes.
 		const bidBox = await page.getByText("Place a bid").boundingBox();
-		const detailsBox = await page
-			.getByRole("heading", { name: /How the sale works/i })
-			.boundingBox();
+		const detailsBox = await page.getByRole("heading", { name: "The sale" }).boundingBox();
 		expect(bidBox && detailsBox && bidBox.y < detailsBox.y).toBe(true);
 
 		await connectWallet(page);
