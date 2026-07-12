@@ -171,21 +171,19 @@ export function AuctionIntro({
 				<Row title="The work">
 					<div className="flex flex-col gap-5 font-sans text-base text-muted leading-relaxed">
 						<p>
-							Panorama is an autonomous painting system by <Yigit />. It reads live market data and
-							turns it, without pause, into a continuous body of work. Nothing is drawn by hand: the
-							system composes every image, and the artist curates and approves the ones that ship.
+							Panorama is an autonomous painting system by <Yigit />. It turns live market data into a
+							continuous body of work, composing every image while the artist curates and approves the
+							ones that ship.
 						</p>
 						<p>
-							The price of $PANO sets the mood. When it climbs, the work brightens toward triumph;
-							when it falls, it darkens toward ruin. The same subject can read as a celebration or a
-							wreck depending only on where the market sits the moment it is made. The price is never
-							shown in the picture. You feel it as weather, not as a number.
+							Season Two, made with <Delta />, traces humankind&apos;s journey from the Stone Age to
+							artificial intelligence. Each painting connects to the next in a continuous tapestry of
+							history, following the tools, discoveries, and inventions that shaped civilization.
 						</p>
 						<p>
-							Season 2, made with <Delta />, is ninety works that trace the history of technology in
-							order. #1 is the earliest invention and #90 the most recent; the numbers between run
-							straight through human making, from the first tools to the machines of now. The sequence
-							is fixed. Whether each invention arrives as a wonder or a warning is left to the market.
+							The series explores both sides of progress: how the same tools can build, heal, and
+							connect, or control, destroy, and divide. Together, the works reflect humanity&apos;s rise
+							from stone to the stars, and the choices that continue to shape our future.
 						</p>
 					</div>
 				</Row>

@@ -671,14 +671,14 @@ export default function AuctionPage() {
           <div className="lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)] lg:gap-x-10 xl:gap-x-14 lg:items-start">
             <div>
               <h1 className="font-serif font-medium leading-[1.02] tracking-[-0.02em] text-foreground text-balance text-[clamp(2rem,1rem+3.1vw,3.5rem)]">
-                A chronicle of invention, lit by the mood of the market.
+                Panorama S2: Anthology of Mankind.
               </h1>
             </div>
             <div className="mt-6 lg:mt-0">
               <p className="font-sans text-muted leading-relaxed text-pretty max-w-[62ch] text-[clamp(1rem,0.94rem+0.3vw,1.2rem)]">
-                Panorama turns live market data into images. Season 2 is ninety works tracing the
-                history of technology in order, each lit by whatever mood the market gives it. This
-                auction sells all ninety at once, at a single clearing price.
+                Panorama, in its second season, traces humanity&apos;s journey from the Stone Age
+                through artificial intelligence. Across ninety connected paintings, it follows
+                inventions that shaped civilization and choices still shaping our future.
               </p>
               {/* Scroll cue as a quiet control: muted arrow + label, brightens and nudges on hover. */}
               <button
@@ -716,7 +716,7 @@ export default function AuctionPage() {
         <aside
           className={`lg:shrink-0 border-b lg:border-b-0 lg:border-r border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
             railOpen
-              ? "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[660px] 4xl:w-[800px] min-[3440px]:w-[920px]"
+              ? "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[760px] 4xl:w-[1000px] min-[3440px]:w-[1240px]"
               : "lg:w-[46px]"
           }`}
           style={{ transitionTimingFunction: "var(--ease-out)" }}
