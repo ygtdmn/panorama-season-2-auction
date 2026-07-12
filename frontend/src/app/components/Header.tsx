@@ -24,23 +24,20 @@ export default function Header() {
 				style={{ height: HEADER_TOP + HEADER_ROW }}
 			/>
 			<div
-				className="fixed left-0 right-0 z-50 grid grid-cols-3 items-center select-none"
-				style={{ top: HEADER_TOP, paddingLeft: 40, paddingRight: 40, height: HEADER_ROW, gap: 24 }}
+				className="fixed left-0 right-0 z-50 flex items-center justify-between select-none gap-6 px-5 md:px-10 4xl:px-16"
+				style={{ top: HEADER_TOP, height: HEADER_ROW }}
 			>
-			<div className="justify-self-start flex items-center min-w-0 whitespace-nowrap" style={{ gap: 10 }}>
+			<div className="flex items-center min-w-0 whitespace-nowrap" style={{ gap: 10 }}>
 				<a href={SITE_URL} className={`${TYPE} text-foreground`}>
 					PANORAMA
 				</a>
 				<span className={`${TYPE} text-foreground/75 hidden sm:inline`}>SEASON 2</span>
 			</div>
 
-			<div className="justify-self-center min-w-0" />
-
-			<div className="justify-self-end flex items-center whitespace-nowrap" style={{ gap: 10 }}>
+			<div className="flex items-center whitespace-nowrap" style={{ gap: 10 }}>
 				<a href={SITE_URL} className={`${TYPE} text-foreground leading-none`}>
 					ENTER PANORAMA
 				</a>
-				<span className={`${TYPE} text-foreground/40 leading-none`}>/</span>
 				<button
 					type="button"
 					onClick={toggle}

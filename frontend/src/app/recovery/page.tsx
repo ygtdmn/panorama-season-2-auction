@@ -152,7 +152,7 @@ export default function RecoveryPage() {
 		<div className="min-h-screen bg-background text-foreground flex flex-col">
 			<Header />
 			<div className="h-20 shrink-0" />
-			<main className="mx-auto w-full max-w-[760px] px-5 md:px-10 pb-32 animate-modal-in">
+			<main className="mx-auto w-full max-w-[760px] 3xl:max-w-[920px] 4xl:max-w-[1120px] min-[3440px]:max-w-[1320px] px-5 md:px-10 3xl:px-16 4xl:px-24 pb-32 animate-modal-in">
 				<div className="flex items-center justify-between gap-4 pt-4 md:pt-8">
 					<div className="flex items-center gap-3">
 						<LiveDot phase={displayPhase(s.phase, now, s.startTime, s.endTime)} />

@@ -58,7 +58,7 @@ function BidRow({
 	return (
 		<li
 			ref={rowRef}
-			className={`relative flex items-center h-10 pl-3 pr-3 ${dim ? "opacity-45" : ""}`}
+			className={`relative flex items-center h-10 3xl:h-11 4xl:h-12 pl-3 pr-3 4xl:px-5 ${dim ? "opacity-45" : ""}`}
 		>
 			<span
 				aria-hidden
@@ -73,18 +73,20 @@ function BidRow({
 			/>
 			{mine && <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-foreground" />}
 
-			<span className="relative font-mono text-micro tabular-nums text-faint w-9 shrink-0">
+			<span className="relative font-mono text-micro 4xl:text-xs tabular-nums text-faint w-9 4xl:w-12 shrink-0">
 				{rank === null ? "—" : `#${rank}`}
 			</span>
-			<span
-				className={`relative font-mono text-xs flex-1 truncate ${mine ? "text-foreground" : "text-muted"}`}
-			>
-				{display}
+			<span className="relative flex items-baseline gap-2 min-w-0 flex-1">
+				<span
+					className={`font-mono text-xs 4xl:text-sm truncate ${mine ? "text-foreground" : "text-muted"}`}
+				>
+					{display}
+				</span>
 				{tag && (
-					<span className="font-mono text-micro uppercase tracking-[0.1em] text-faint ml-2">{tag}</span>
+					<span className="font-mono text-micro uppercase tracking-[0.1em] text-faint shrink-0">{tag}</span>
 				)}
 			</span>
-			<span className="relative font-serif tabular-nums text-foreground shrink-0">
+			<span className="relative font-serif tabular-nums text-foreground shrink-0 4xl:text-lg">
 				{eth(amount)}
 				<span className="font-mono text-micro uppercase tracking-[0.1em] text-faint ml-1">ETH</span>
 			</span>
@@ -160,8 +162,8 @@ export function Standings({
 			</div>
 				{(wonHistoryPending || wonHistoryUnsafe) && (
 					<div
-						className={`mt-3 border px-3 py-3 flex flex-col gap-2 ${
-							wonHistoryUnsafe ? "border-signal/50" : "border-line"
+						className={`mt-3 px-3 py-3 flex flex-col gap-2 ${
+							wonHistoryUnsafe ? "bg-signal/10" : "bg-surface"
 						}`}
 						role={wonHistoryUnsafe ? "alert" : "status"}
 					>
@@ -183,7 +185,7 @@ export function Standings({
 				)}
 
 				{empty ? (
-					<p className="font-sans text-sm text-muted mt-4 py-8 text-center border-t border-line">
+					<p className="font-sans text-sm text-muted mt-4 py-8 px-4 text-center bg-surface">
 						{phase === "active"
 							? "No bids yet. The highest bid takes #1."
 							: wonHistoryPending || wonHistoryUnsafe || wonExpectedCount > 0
@@ -197,7 +199,7 @@ export function Standings({
 							Minted rows are shown only as far as winner history can currently be verified.
 						</p>
 					)}
-					<ol className="mt-3 border-t border-line divide-y divide-line/60">
+					<ol className="mt-3 [&>li:nth-child(even)]:bg-foreground/[0.025]">
 						{won.map((w) => (
 							<BidRow
 								key={`won-${w.tokenId}`}
@@ -226,7 +228,7 @@ export function Standings({
 					</ol>
 
 					{isFull && phase === "active" && (
-						<div className="flex items-center justify-between border-y border-line/70 py-2.5 mt-1">
+						<div className="flex items-center justify-between bg-surface px-3 py-2.5 mt-2">
 							<span className="font-mono text-micro uppercase tracking-[0.14em] text-signal/80">
 								clearing floor
 							</span>
@@ -236,7 +238,7 @@ export function Standings({
 						</div>
 					)}
 					{phase === "settled" && (
-						<div className="flex items-center justify-between border-y border-line/70 py-2.5 mt-1">
+						<div className="flex items-center justify-between bg-surface px-3 py-2.5 mt-2">
 							<span className="font-mono text-micro uppercase tracking-[0.14em] text-muted">
 								settled price
 							</span>

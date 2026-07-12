@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { LuChevronsLeft, LuChevronsRight } from "react-icons/lu";
+import { LuArrowDown, LuChevronsLeft, LuChevronsRight } from "react-icons/lu";
 import Header from "@/app/components/Header";
 import { WalletPill } from "@/app/components/WalletPill";
 import { useToast } from "@/app/components/Toast";
@@ -322,10 +322,11 @@ export default function AuctionPage() {
 
 	  <TransactionStatus actions={actions} />
 
-      {/* Primary module: how full the sale is, and the way to act on it */}
-      <div className="bg-surface border border-line">
+      {/* Primary module: how full the sale is, and the way to act on it. Two raised panels,
+          separated by space and depth rather than a rule. */}
+      <div className="flex flex-col gap-4">
         {/* Capacity */}
-        <div className="p-5 flex flex-col gap-3">
+        <div className="bg-surface p-5 flex flex-col gap-3">
           <div className="flex items-baseline justify-between gap-4">
             <Label>Slots filled</Label>
             <span className="font-serif font-medium text-lg tabular-nums text-foreground leading-none">
@@ -337,7 +338,7 @@ export default function AuctionPage() {
         </div>
 
         {/* Action — place a bid, or the reason you can't right now */}
-        <div className="border-t border-line p-5">
+        <div className="bg-surface p-5">
           {statusNote && !biddable ? (
             <p className="font-sans text-sm text-muted leading-relaxed">
               {statusNote}
@@ -448,7 +449,7 @@ export default function AuctionPage() {
       {isConnected && s.yourBids.length > 0 && (
         <div>
           <Label>Your bids / {s.yourBids.length}</Label>
-          <ul className="mt-3 border-t border-line">
+          <ul className="mt-3 flex flex-col gap-2">
             {s.yourBids.map((b) => {
 			  const raiseRaw = raiseInputs[b.id] || "";
 			  const raiseWei = parseEthInput(raiseRaw);
@@ -464,7 +465,7 @@ export default function AuctionPage() {
               return (
                 <li
                   key={b.id}
-                  className="flex items-center gap-3 border-b border-line py-3"
+                  className="flex items-center gap-3 bg-surface px-3 py-2.5"
                 >
                   <span className="font-serif text-base tabular-nums text-foreground w-20">
                     {eth(b.amount)}{" "}
@@ -533,7 +534,7 @@ export default function AuctionPage() {
 
       {/* Pending refund */}
       {isConnected && s.yourPending > 0n && (
-        <div className="border border-line p-4 flex items-center justify-between">
+        <div className="bg-surface p-4 flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <Label>Refund available</Label>
             <span className="font-serif text-lg tabular-nums text-foreground">
@@ -558,7 +559,7 @@ export default function AuctionPage() {
         emergencyAvailable ||
 		supplyRecoveryAvailable ||
 		mintingRecoveryAvailable) && (
-        <div className="border border-signal/40 p-4 flex flex-col gap-3">
+        <div className="bg-signal/10 p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <Label>Permissionless recovery</Label>
             <p className="font-sans text-sm text-muted leading-relaxed">
@@ -660,35 +661,64 @@ export default function AuctionPage() {
       <Header />
       <div className="h-16 shrink-0" />
 
-      {/* HERO PRIMER — the whole panorama, full-width and scrollable left to right, then the
-          title and a short description, all readable without scrolling. */}
-      <section className="w-full">
-        <div className="mt-4 md:mt-8">
+      {/* HERO — panorama + masthead sized to exactly one viewport height on desktop, so the
+          scroll button lands on the bottom edge and "there is more below" needs no sentence.
+          Title and primer split into two columns on wide screens; type is fluid (clamp). */}
+      <section className="w-full flex flex-col lg:h-[calc(100dvh-4rem)] lg:min-h-[620px]">
+        <div className="mt-4 md:mt-6 h-[52vh] lg:h-auto lg:flex-1 lg:min-h-0">
           <HeroPanorama />
         </div>
-        <div className="mx-auto max-w-[900px] px-5 md:px-8 pt-8 md:pt-12 pb-12 md:pb-16">
-          <Label>Panorama Season 2</Label>
-          <h1 className="font-serif font-medium text-[1.9rem] md:text-[2.9rem] leading-[1.03] tracking-[-0.02em] text-foreground mt-4 max-w-[20ch] text-balance">
-            A chronicle of invention, lit by the mood of the market.
-          </h1>
-          <p className="mt-5 font-sans text-base md:text-lg text-muted leading-relaxed max-w-[58ch] text-pretty">
-            Panorama turns live market data into images. Season 2 is ninety works tracing the
-            history of technology in order, each lit by whatever mood the market gives it. This
-            auction sells all ninety at once, at a single clearing price.
-          </p>
-          <div className="mt-8 inline-flex items-center gap-2 font-mono text-micro uppercase tracking-[0.18em] text-faint">
-            <span className="animate-[breathe_2.4s_var(--ease-out)_infinite]">↓</span>
-            Bid and full details below
+        <div className="mx-auto w-full 4xl:max-w-[2400px] min-[3440px]:max-w-[2720px] px-5 md:px-10 xl:px-14 4xl:px-16 pt-8 md:pt-12 lg:pt-8 pb-8 md:pb-10">
+          <div className="lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)] lg:gap-x-10 xl:gap-x-14 lg:items-start">
+            <div>
+              <h1 className="font-serif font-medium leading-[1.02] tracking-[-0.02em] text-foreground text-balance text-[clamp(2rem,1rem+3.1vw,3.5rem)]">
+                A chronicle of invention, lit by the mood of the market.
+              </h1>
+            </div>
+            <div className="mt-6 lg:mt-0">
+              <p className="font-sans text-muted leading-relaxed text-pretty max-w-[62ch] text-[clamp(1rem,0.94rem+0.3vw,1.2rem)]">
+                Panorama turns live market data into images. Season 2 is ninety works tracing the
+                history of technology in order, each lit by whatever mood the market gives it. This
+                auction sells all ninety at once, at a single clearing price.
+              </p>
+              {/* Scroll cue as a quiet control: muted arrow + label, brightens and nudges on hover. */}
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("sale");
+                  if (el)
+                    window.scrollTo({
+                      top: el.getBoundingClientRect().top + window.scrollY - 64,
+                      behavior: "smooth",
+                    });
+                }}
+                aria-label="Scroll to bidding and details"
+                className="group mt-6 inline-flex items-center gap-2.5 text-faint hover:text-foreground transition-colors cursor-pointer"
+              >
+                <LuArrowDown
+                  size={14}
+                  className="transition-transform duration-300 group-hover:translate-y-0.5"
+                />
+                <span className="font-mono text-micro uppercase tracking-[0.2em]">
+                  Bid and full details
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* TWO PANES — bidding rail (sticky on desktop) and the details article */}
-      <div className="flex flex-col lg:flex-row border-t border-line">
+      {/* TWO PANES — bidding rail (sticky on desktop) and the details article. The inner row is
+          capped + centered so ultrawide slack becomes symmetric outer margin instead of a
+          mid-pane void. The only rule on the page is the rail / content divider below. */}
+      <div className="w-full scroll-mt-16" id="sale">
+      <div className="flex flex-col lg:flex-row mx-auto w-full 4xl:max-w-[2400px] min-[3440px]:max-w-[2720px]">
         {/* Bidding: mobile FIRST, desktop LEFT and sticky so it stays usable while reading. */}
         <aside
           className={`lg:shrink-0 border-b lg:border-b-0 lg:border-r border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
-            railOpen ? "lg:w-[440px] xl:w-[500px]" : "lg:w-[46px]"
+            railOpen
+              ? "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[660px] 4xl:w-[800px] min-[3440px]:w-[920px]"
+              : "lg:w-[46px]"
           }`}
           style={{ transitionTimingFunction: "var(--ease-out)" }}
         >
@@ -731,6 +761,7 @@ export default function AuctionPage() {
             }
           />
         </main>
+      </div>
       </div>
     </div>
   );

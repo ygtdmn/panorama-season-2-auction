@@ -20,6 +20,15 @@ export const OPENSEA_COLLECTION_URL = `https://opensea.io/collection/${OPENSEA_C
 
 export const SITE_URL = "https://panorama.garden";
 
+// Public source + on-chain code links, so anyone can read the contract before bidding.
+export const GITHUB_URL =
+	process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/ygtdmn/panorama";
+
+/** evm.now shows a contract's verified/decompiled source by address. */
+export function getEvmNowUrl(address: string): string {
+	return `https://evm.now/${address}`;
+}
+
 export const OG_IMAGE_URL = `${CDN_BASE_URL}/og-preview.jpg`;
 
 export function getBlockExplorerAddressUrl(address: string): string {

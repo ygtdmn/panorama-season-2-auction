@@ -56,15 +56,14 @@ export function HeroPanorama() {
 	};
 
 	return (
-		<div className="relative w-full">
+		<div className="relative w-full h-full">
 			<div
 				ref={scrollerRef}
 				onPointerDown={onPointerDown}
 				onPointerMove={onPointerMove}
 				onPointerUp={endDrag}
 				onPointerCancel={endDrag}
-				className="w-full overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing"
-				style={{ height: "54vh", minHeight: 240, maxHeight: 560 }}
+				className="w-full h-full overflow-x-auto overflow-y-hidden select-none cursor-grab active:cursor-grabbing"
 			>
 				<div className="flex h-full w-max bg-surface">
 					{IMAGES.map((url, i) => (

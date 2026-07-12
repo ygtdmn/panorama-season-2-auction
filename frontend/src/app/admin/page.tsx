@@ -113,7 +113,7 @@ export default function AuctionAdminPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header />
       <div className="h-20 shrink-0" />
-      <main className="mx-auto w-full max-w-[840px] px-5 md:px-10 pb-32 animate-modal-in">
+      <main className="mx-auto w-full max-w-[840px] xl:max-w-[1000px] 3xl:max-w-[1200px] 4xl:max-w-[1440px] px-5 md:px-10 3xl:px-16 4xl:px-24 pb-32 animate-modal-in">
         <div className="flex items-center justify-between gap-4 pt-4 md:pt-8 mb-8">
           <div className="flex items-center gap-3">
             <LiveDot phase={displayPhase(s.phase, now, s.startTime, s.endTime)} />
@@ -181,7 +181,7 @@ export default function AuctionAdminPage() {
 	  <TransactionStatus actions={actions} />
       {/* State */}
       <section className={PANEL}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 3xl:grid-cols-8 gap-x-4 sm:gap-x-8">
           <Cell label="Phase">{s.phase}</Cell>
           <Cell label="Active bids">
             {s.activeBids}

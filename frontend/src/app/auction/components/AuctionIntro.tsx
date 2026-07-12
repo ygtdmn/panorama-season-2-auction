@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import {
-	getBlockExplorerAddressUrl,
+	getEvmNowUrl,
+	GITHUB_URL,
 	OPENSEA_COLLECTION_URL,
-	PANORAMA_NFT_ADDRESS,
+	PANORAMA_AUCTION_ADDRESS,
 	SITE_URL,
 } from "@/lib/constants";
-import { Label } from "./ui";
 
 const TERMINAL_URL = `${SITE_URL}/terminal`;
 const X_YIGIT = "https://x.com/YigitDuman";
@@ -27,6 +27,46 @@ function Yigit() {
 }
 function Delta() {
 	return <Ext href={X_DELTA}>DeltaSauce</Ext>;
+}
+
+/**
+ * One editorial row: the heading sits in a left meta column and the content flows in the main
+ * column. Stacked on mobile / small tablets (the read the mobile design nails); a two-track grid
+ * from xl up, where the pane is wide enough to carry it. The heading is fluid so it never jumps.
+ */
+function Row({
+	title,
+	caption,
+	children,
+}: {
+	title: string;
+	caption?: string;
+	children: React.ReactNode;
+}) {
+	// No rules anywhere. The heading sits in the left gutter; the content sits in a raised
+	// surface panel. Separation is space and depth, not lines. Panels are spaced by the
+	// container's flex gap.
+	return (
+		<section className="grid gap-x-8 gap-y-3 xl:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] xl:gap-x-12 3xl:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+			<div className="xl:pt-8">
+				<h2 className="font-serif font-medium tracking-[-0.01em] text-foreground leading-tight text-pretty text-[clamp(1.3rem,1.05rem+0.7vw,1.7rem)]">
+					{title}
+				</h2>
+				{caption && (
+					<p className="mt-2 font-mono text-micro uppercase tracking-[0.16em] text-faint">
+						{caption}
+					</p>
+				)}
+			</div>
+			<div className="min-w-0">
+				{/* Card sized to its content — a consistent column of panels, not stretched
+				    across the track (which would leave dead space inside each panel). */}
+				<div className="bg-surface p-6 md:p-8 lg:p-10 max-w-[44rem] 3xl:max-w-[48rem]">
+					{children}
+				</div>
+			</div>
+		</section>
+	);
 }
 
 export function AuctionIntro({
@@ -125,11 +165,11 @@ export function AuctionIntro({
 
 	return (
 		<article className="pb-24">
-			<div className="mx-auto max-w-[860px] px-5 md:px-10">
-				{/* The work — deeper read; the hero above already carries the title. */}
-				<section className="pt-12 md:pt-16">
-					<Label>The work</Label>
-					<div className="mt-5 flex flex-col gap-5 font-sans text-base text-muted leading-relaxed max-w-[62ch]">
+			<div className="mx-auto w-full max-w-[1500px] 4xl:max-w-[1720px] px-5 md:px-10 xl:px-14 flex flex-col gap-5 md:gap-6">
+				{/* The work — the deeper read; the hero above already carries the title. One
+				    readable column, never split into newspaper columns. */}
+				<Row title="The work">
+					<div className="flex flex-col gap-5 font-sans text-base text-muted leading-relaxed">
 						<p>
 							Panorama is an autonomous painting system by <Yigit />. It reads live market data and
 							turns it, without pause, into a continuous body of work. Nothing is drawn by hand: the
@@ -148,27 +188,17 @@ export function AuctionIntro({
 							is fixed. Whether each invention arrives as a wonder or a warning is left to the market.
 						</p>
 					</div>
-				</section>
+				</Row>
 
-				{/* What the sale is */}
-				<section className="pt-12 md:pt-14 mt-12 md:mt-14 border-t border-line">
-					<h2 className="font-serif font-medium text-xl md:text-2xl tracking-[-0.01em] text-foreground">
-						This sale
-					</h2>
-					<p className="mt-5 font-sans text-base text-muted leading-relaxed max-w-[62ch]">
+				{/* The sale — what it is, then how it works, in one panel. */}
+				<Row title="The sale">
+					<p className="font-sans text-base text-muted leading-relaxed">
 						All ninety Season 2 paintings are sold at once, at a single price. You bid the most you
 						would pay; the ninety highest bids win; and every winner pays the same amount, the
 						ninetieth-highest bid. Anything you bid above it comes back when the sale settles. Winners
 						are minted after settlement, and each painting reveals on its own day, highest bid first.
 					</p>
-				</section>
-
-				{/* How the sale works */}
-				<section className="pt-12 md:pt-14 mt-12 md:mt-14 border-t border-line">
-					<h2 className="font-serif font-medium text-xl md:text-2xl tracking-[-0.01em] text-foreground">
-						How the sale works
-					</h2>
-					<ol className="mt-6 flex flex-col divide-y divide-line">
+					<ol className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
 						{[
 							{
 								n: "01",
@@ -191,36 +221,29 @@ export function AuctionIntro({
 								d: "The top bid takes #1 and reveals on day one. Each slot down reveals a day later. Bid more to reveal sooner.",
 							},
 						].map((s) => (
-							<li key={s.n} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-								<span className="font-mono text-micro tabular-nums text-faint pt-1 w-6 shrink-0">
-									{s.n}
-								</span>
-								<div className="flex flex-col gap-1.5">
-									<h3 className="font-serif font-medium text-lg text-foreground leading-snug">{s.t}</h3>
-									<p className="font-sans text-sm text-muted leading-relaxed">{s.d}</p>
-								</div>
+							<li key={s.n} className="flex flex-col gap-2">
+								<span className="font-mono text-micro tabular-nums text-faint">{s.n}</span>
+								<h3 className="font-serif font-medium text-lg text-foreground leading-snug">{s.t}</h3>
+								<p className="font-sans text-sm text-muted leading-relaxed">{s.d}</p>
 							</li>
 						))}
 					</ol>
-				</section>
+				</Row>
 
 				{/* FAQ */}
-				<section className="pt-12 md:pt-14 mt-12 md:mt-14 border-t border-line">
-					<h2 className="font-serif font-medium text-xl md:text-2xl tracking-[-0.01em] text-foreground">
-						Questions
-					</h2>
-					<dl className="mt-6 flex flex-col divide-y divide-line">
+				<Row title="Questions">
+					<dl className="flex flex-col gap-7">
 						{faqs.map((f) => (
-							<div key={f.q} className="py-5 first:pt-0 grid md:grid-cols-[210px_1fr] gap-1.5 md:gap-6">
+							<div key={f.q} className="flex flex-col gap-1.5">
 								<dt className="font-sans font-semibold text-sm text-foreground leading-snug">{f.q}</dt>
 								<dd className="font-sans text-sm text-muted leading-relaxed">{f.a}</dd>
 							</div>
 						))}
 					</dl>
-				</section>
+				</Row>
 
 				{/* Footer links */}
-				<section className="pt-10 mt-12 border-t border-line flex flex-wrap items-center gap-x-6 gap-y-2">
+				<section className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4">
 					<Ext href={`${SITE_URL}/about`}>
 						<span className="font-mono text-micro uppercase tracking-[0.16em]">The full story ↗</span>
 					</Ext>
@@ -230,9 +253,12 @@ export function AuctionIntro({
 					<Ext href={OPENSEA_COLLECTION_URL}>
 						<span className="font-mono text-micro uppercase tracking-[0.16em]">OpenSea</span>
 					</Ext>
-					{PANORAMA_NFT_ADDRESS && (
-						<Ext href={getBlockExplorerAddressUrl(PANORAMA_NFT_ADDRESS)}>
-							<span className="font-mono text-micro uppercase tracking-[0.16em]">Contract</span>
+					<Ext href={GITHUB_URL}>
+						<span className="font-mono text-micro uppercase tracking-[0.16em]">GitHub ↗</span>
+					</Ext>
+					{PANORAMA_AUCTION_ADDRESS && (
+						<Ext href={getEvmNowUrl(PANORAMA_AUCTION_ADDRESS)}>
+							<span className="font-mono text-micro uppercase tracking-[0.16em]">Contract code ↗</span>
 						</Ext>
 					)}
 					<span className="font-mono text-micro uppercase tracking-[0.14em] text-faint ml-auto">
