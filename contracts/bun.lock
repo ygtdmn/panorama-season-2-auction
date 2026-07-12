@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "panorama-season-2-auction-contracts",
+      "dependencies": {
+        "forge-std": "github:foundry-rs/forge-std#v1.14.0",
+        "solady": "0.1.26",
+      },
+    },
+  },
+  "packages": {
+    "forge-std": ["forge-std@github:foundry-rs/forge-std#1801b05", {}, "foundry-rs-forge-std-1801b05"],
+
+    "solady": ["solady@0.1.26", "", {}, "sha512-dhGr/ptJFdea/1KE6xgqgwEdbMhUiSfRc6A+jLeltPe16zyt9qtED3PElIBVRnzEmUO5aZTjKVAr6SlqXBBcIw=="],
+  }
+}

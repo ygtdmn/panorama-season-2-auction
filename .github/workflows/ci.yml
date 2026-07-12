@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    name: lint + typecheck + unit + build + audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run ci
+      - name: strict mainnet production build
+        run: pnpm build
+        env:
+          PANORAMA_PRODUCTION: "1"
+          NEXT_PUBLIC_CHAIN_ID: "1"
+          NEXT_PUBLIC_RPC_URL: https://rpc.example.invalid
+          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ci-project
+          NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS: "0x1111111111111111111111111111111111111111"
+          NEXT_PUBLIC_PANORAMA_NFT_ADDRESS: "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff"
+          NEXT_PUBLIC_AUCTION_DEPLOY_BLOCK: "1"
+      - name: production dependency audit
+        run: pnpm audit --prod
+
+  contracts:
+    name: forge tests (auction)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: bun install --frozen-lockfile
+      - run: FOUNDRY_PROFILE=ci forge test --match-path 'test/PanoramaSeason2Auction*' -vv
+      - run: forge build --sizes src/PanoramaSeason2Auction.sol
+      - run: forge fmt --check src/PanoramaSeason2Auction.sol test/PanoramaSeason2Auction.t.sol test/PanoramaSeason2Auction.invariants.t.sol test/PanoramaSeason2AuctionAtomicSettlement.t.sol script/DeployAuction.s.sol script/AuthorizeAuction.s.sol script/SettleAuctionAtomic.s.sol script/FinalizeAuction.s.sol script/CancelAuction.s.sol script/RefundAllAuction.s.sol
+      - name: validate operations scripts
+        run: |
+          bash -n scripts/*.sh
+          scripts/test-operations.sh
+
+  e2e:
+    name: anvil-backed e2e (desktop + mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: build contract artifacts for the e2e chain
+        working-directory: contracts
+        run: |
+          bun install --frozen-lockfile
+          forge build src/Panorama.sol src/PanoramaMintController.sol src/PanoramaSeason2Auction.sol
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: install deps + browsers
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: run e2e
+        working-directory: frontend
+        run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

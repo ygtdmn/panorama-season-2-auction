@@ -1,0 +1,737 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { LuChevronsLeft, LuChevronsRight } from "react-icons/lu";
+import Header from "@/app/components/Header";
+import { WalletPill } from "@/app/components/WalletPill";
+import { useToast } from "@/app/components/Toast";
+import {
+  getBlockExplorerTxUrl,
+  PANORAMA_AUCTION_ADDRESS,
+} from "@/lib/constants";
+import { describeAuctionError } from "@/lib/auctionErrors";
+import type { WriteName } from "./hooks/useAuctionActions";
+import { useAuctionSession } from "./hooks/useAuctionSession";
+import { HeroPanorama } from "./components/HeroPanorama";
+import { DemoBar } from "./components/DemoBar";
+import { Standings } from "./components/Standings";
+import { AuctionIntro } from "./components/AuctionIntro";
+import {
+  pendingActionLabel,
+  TransactionStatus,
+} from "@/app/components/TransactionStatus";
+import {
+  displayPhase,
+  eth,
+  ethCeil,
+  ethExact,
+  fmtDateUTC,
+  Label,
+  LiveDot,
+  Meter,
+  normalizeDecimalInput,
+  parseEthInput,
+  useChainNow,
+  type DisplayPhase,
+} from "./components/ui";
+
+const PHASE_COPY: Record<DisplayPhase, string> = {
+  upcoming: "Upcoming",
+  active: "Live",
+  closed: "Closed",
+  finalizing: "Settling",
+  settled: "Settled",
+  cancelled: "Cancelled",
+};
+
+const SUCCESS_COPY: Partial<Record<WriteName, string>> = {
+  placeBid: "Bid placed.",
+  increaseBid: "Bid raised.",
+  withdraw: "Refund withdrawn.",
+  finalize: "Settlement batch confirmed.",
+  refundAll: "Refund batch confirmed.",
+  emergencyRefund: "Emergency refund batch confirmed.",
+  recoverFromSupplyMismatch: "Recovery batch confirmed.",
+  recoverFromMintingUnavailable: "Minting-capability recovery batch confirmed.",
+};
+
+// Green primary — matches the terminal's BUY button (#7AE0B5 on near-black),
+// a fixed brand green that reads the same in light and dark.
+const PRIMARY =
+  "w-full font-mono text-xs uppercase tracking-[0.25em] bg-[#7AE0B5] text-[#0a0a0a] py-4 transition-opacity duration-200 hover:opacity-90 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7AE0B5]";
+const GHOST =
+  "font-mono text-xs uppercase tracking-[0.2em] border border-line px-5 py-3.5 text-foreground transition-colors duration-200 hover:border-foreground active:translate-y-px disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer";
+const CHIP =
+  "font-mono text-micro uppercase tracking-[0.1em] text-muted border border-line px-2.5 py-1.5 hover:border-foreground hover:text-foreground active:translate-y-px transition-colors duration-200 cursor-pointer";
+
+function Countdown({
+  now,
+  startTime,
+  endTime,
+}: {
+  now: number;
+  startTime: number;
+  endTime: number;
+}) {
+  if (!now)
+    return (
+      <span className="font-serif text-xl tabular-nums text-faint">··:··</span>
+    );
+  // Before the sale opens, count down to the start; after, to the end.
+  const preStart = now < startTime;
+  const target = preStart ? startTime : endTime;
+  const left = Math.max(0, target - now);
+  const d = Math.floor(left / 86400);
+  const h = Math.floor((left % 86400) / 3600);
+  const m = Math.floor((left % 3600) / 60);
+  const sec = left % 60;
+  const pad = (x: number) => String(x).padStart(2, "0");
+  // Drop the churning seconds until the final hour.
+  const text =
+    left === 0
+      ? "Ended"
+      : left >= 3600
+        ? `${d > 0 ? `${d}d ` : ""}${pad(h)}:${pad(m)}`
+        : `${pad(m)}:${pad(sec)}`;
+  return (
+    <span className="font-serif font-medium text-xl tabular-nums tracking-[-0.01em] text-foreground leading-none">
+      {text}
+      {left > 0 && (
+        <span className="font-mono text-micro text-faint ml-1.5">
+          {preStart ? "to start" : "left"}
+        </span>
+      )}
+    </span>
+  );
+}
+
+export default function AuctionPage() {
+  const toast = useToast();
+  const {
+    demo,
+    isConnected,
+    address,
+    state: s,
+    actions,
+    controls,
+  } = useAuctionSession();
+  // Chain-anchored clock: block timestamp + elapsed. The device clock only supplies the
+  // seconds since the last block, so local clock skew cannot flip live/ended incorrectly.
+  const now = useChainNow(s.chainTime);
+  // The contract stays "active" from deploy until finalize; only startTime→endTime
+  // is live. Everything status-shaped (label, dot) reads this, not the raw phase.
+  const phaseView = displayPhase(s.phase, now, s.startTime, s.endTime);
+
+  const [bidInput, setBidInput] = useState("");
+  const [raiseInputs, setRaiseInputs] = useState<Record<number, string>>({});
+  const [railOpen, setRailOpen] = useState(true);
+  // The last submitted tx survives reset() so the explorer link stays after confirmation.
+  const [lastTx, setLastTx] = useState<`0x${string}`>();
+
+  useEffect(() => {
+    if (actions.txHash) setLastTx(actions.txHash);
+  }, [actions.txHash]);
+
+  useEffect(() => {
+    if (actions.status === "error" && actions.error) {
+      const msg = describeAuctionError(actions.error);
+      if (msg) toast.error(msg);
+      actions.reset();
+    }
+    if (actions.status === "success") {
+      toast.success(
+        (actions.lastAction && SUCCESS_COPY[actions.lastAction]) ||
+          "Transaction confirmed.",
+      );
+      setBidInput("");
+      setRaiseInputs({});
+      actions.reset();
+    }
+	if (actions.status === "cancelled") {
+	  toast.info("Transaction cancelled in your wallet. The auction action was not submitted.");
+	  actions.reset();
+	}
+	if (actions.status === "replaced") {
+	  toast.info("A different replacement transaction confirmed. The auction action was not submitted.");
+	  actions.reset();
+	}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actions.status]);
+
+  // Displacement is silent on-chain from this wallet's perspective: the bid simply leaves
+  // the top 90 and the ETH is force-returned. Detect the shrink between snapshots and say so.
+  const prevBidsRef = useRef<{ address?: string; ids: Set<number> }>({
+    ids: new Set(),
+  });
+  useEffect(() => {
+    const prev = prevBidsRef.current;
+    const ids = new Set(s.yourBids.map((b) => b.id));
+    if (prev.address === address && s.phase === "active" && prev.ids.size > 0) {
+      for (const id of prev.ids) {
+        if (!ids.has(id)) {
+          toast.info(
+            "You were outbid. Your ETH was returned to your wallet in full.",
+          );
+          break;
+        }
+      }
+    }
+    prevBidsRef.current = { address, ids };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, s.phase, s.yourBids]);
+
+  const loading = !demo && !s.ready && !s.readFailed;
+  const biddable =
+    s.phase === "active" &&
+    !s.paused &&
+    !s.supplyMismatched &&
+    now !== 0 &&
+    now >= s.startTime &&
+    now < s.endTime;
+  const heroClearing =
+    s.phase === "settled" ? s.clearingPrice : s.currentClearingPrice;
+  const durationHours =
+    s.scheduledEndTime > s.startTime
+      ? Math.round((s.scheduledEndTime - s.startTime) / 3600)
+      : 48;
+
+	const bidNormalized = useMemo(() => normalizeDecimalInput(bidInput), [bidInput]);
+  const bidWei = useMemo(() => parseEthInput(bidInput), [bidInput]);
+	const bidInvalid =
+		bidInput.trim() !== "" &&
+		bidNormalized !== "." &&
+		bidWei === null;
+	const bidTooLow = bidWei !== null && bidWei > 0n && bidWei < s.minimumBid;
+	const busy = actions.unresolved;
+	const writeBlocked = busy;
+  const recoveryAvailable = s.phase === "cancelled" && !s.refundsComplete;
+  const emergencyAvailable =
+    now !== 0 &&
+    now > s.emergencyEligibleAt &&
+    (s.phase === "active" || s.phase === "finalizing");
+  const supplyRecoveryAvailable =
+    s.supplyMismatched && (s.phase === "active" || s.phase === "finalizing");
+	const mintingRecoveryAvailable =
+	  !supplyRecoveryAvailable &&
+	  s.mintingUnavailable &&
+	  now !== 0 &&
+	  now >= s.finalizeEligibleAt &&
+	  (s.phase === "active" || s.phase === "finalizing");
+  const finalizeOpenToAll =
+    now !== 0 &&
+    s.finalizeEligibleAt > 0 &&
+    now >= s.finalizeEligibleAt &&
+    (s.phase === "active" || s.phase === "finalizing") &&
+		now >= s.endTime &&
+		!s.supplyMismatched &&
+		!s.mintingUnavailable;
+
+  if (!PANORAMA_AUCTION_ADDRESS && !demo) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Header />
+        <div className="h-20 shrink-0" />
+        <main className="mx-auto w-full max-w-[1180px] px-5 md:px-10 mt-16">
+          <Label>Panorama Season 2</Label>
+          <h1 className="font-serif text-2xl md:text-3xl leading-[0.98] mt-4">
+            The auction is not live yet.
+          </h1>
+          <p className="font-sans text-sm text-muted mt-4 max-w-[46ch]">
+            Append <span className="font-mono text-foreground">?demo=1</span> to
+            preview the full bidding flow with in-memory data.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  const statusNote = (() => {
+    if (s.phase === "settled")
+      return "Settled. Winners minted highest-first; excess refunded.";
+    if (s.phase === "cancelled")
+      return s.refundsComplete
+        ? "Cancelled. All remaining bids have been refunded."
+        : s.activeBids > 0
+          ? `Cancelled. ${s.activeBids} refund${s.activeBids === 1 ? "" : "s"} remaining; anyone can process them.`
+          : "Cancelled. One final call completes the recovery; anyone can send it.";
+    if (s.phase === "finalizing")
+      return "Settling now. Winners are being minted, highest bid first.";
+    if (s.supplyMismatched)
+      return "Collection supply changed unexpectedly. Bidding is closed; recovery is available below.";
+    if (s.paused) return "Bidding is paused.";
+    if (now !== 0 && now < s.startTime) return "Bidding opens soon.";
+    if (now !== 0 && now >= s.endTime)
+      return "Bidding closed. Awaiting settlement.";
+    return "";
+  })();
+
+  const railBody = loading ? (
+    <div className="flex flex-col gap-3 py-10 items-center text-center">
+      <Label>Loading</Label>
+      <p className="font-sans text-sm text-muted">Reading the auction state…</p>
+    </div>
+  ) : s.readFailed && !demo ? (
+    <div
+      className="flex flex-col gap-3 py-10 items-center text-center"
+      role="alert"
+    >
+      <Label className="text-signal">Connection problem</Label>
+      <p className="font-sans text-sm text-muted max-w-[32ch]">
+        The auction state could not be loaded. Check your connection; retrying
+        automatically.
+      </p>
+      <button className={GHOST} onClick={() => s.refetch()}>
+        retry now
+      </button>
+    </div>
+  ) : (
+    <>
+      {demo && controls && <DemoBar controls={controls} />}
+
+      {/* Status header: phase + countdown on the left, wallet + collapse on the right */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2">
+          <span className="inline-flex items-center gap-2">
+            <LiveDot phase={phaseView} />
+            <span className="font-mono text-micro uppercase tracking-[0.2em] text-muted">
+              {PHASE_COPY[phaseView]}
+            </span>
+          </span>
+          <Countdown now={now} startTime={s.startTime} endTime={s.endTime} />
+          {s.extensionCount > 0 && (
+            <span className="font-mono text-micro uppercase tracking-[0.12em] text-faint">
+              extended {s.extensionCount}× / hard end{" "}
+              {fmtDateUTC(s.absoluteEndTime)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {!demo && <WalletPill />}
+          <button
+            type="button"
+            onClick={() => setRailOpen(false)}
+            title="Collapse"
+            aria-label="Collapse bids panel"
+            className="hidden lg:inline-flex items-center justify-center w-8 h-8 text-faint hover:text-foreground transition-colors cursor-pointer shrink-0"
+          >
+            <LuChevronsLeft size={16} />
+          </button>
+        </div>
+      </div>
+
+	  <TransactionStatus actions={actions} />
+
+      {/* Primary module: how full the sale is, and the way to act on it */}
+      <div className="bg-surface border border-line">
+        {/* Capacity */}
+        <div className="p-5 flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <Label>Slots filled</Label>
+            <span className="font-serif font-medium text-lg tabular-nums text-foreground leading-none">
+              {s.activeBids}
+              <span className="text-faint">/{s.maxUnits}</span>
+            </span>
+          </div>
+          <Meter filled={s.activeBids} total={s.maxUnits} />
+        </div>
+
+        {/* Action — place a bid, or the reason you can't right now */}
+        <div className="border-t border-line p-5">
+          {statusNote && !biddable ? (
+            <p className="font-sans text-sm text-muted leading-relaxed">
+              {statusNote}
+              {finalizeOpenToAll && (
+                <>
+                  {" "}
+                  <Link
+                    href="/recovery"
+                    className="text-foreground underline hover:opacity-60"
+                  >
+                    Anyone can settle it now.
+                  </Link>
+                </>
+              )}
+            </p>
+          ) : !isConnected ? (
+            <div className="flex flex-col gap-3">
+              <Label>Place a bid</Label>
+              <p className="font-sans text-sm text-muted">
+                Connect a wallet to place your bid.
+              </p>
+              <WalletPill connectLabel="connect wallet" />
+            </div>
+          ) : s.yourBidCount >= s.maxBidsPerWallet ? (
+            <div className="flex flex-col gap-2">
+              <Label>Place a bid</Label>
+              <p className="font-sans text-sm text-muted leading-relaxed">
+                You&apos;re holding all {s.maxBidsPerWallet} bids. Raise one
+                below to bid higher.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <Label>Place a bid</Label>
+              <div className="flex items-baseline gap-3 border-b border-line focus-within:border-foreground transition-colors duration-200 pb-3">
+                <input
+                  value={bidInput}
+				  onChange={(e) => setBidInput(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={ethCeil(s.minimumBid)}
+                  aria-label="Bid amount in ETH"
+				  aria-invalid={bidInvalid}
+				  aria-describedby={bidInvalid ? "bid-amount-error" : undefined}
+                  className="bg-transparent outline-none font-serif font-medium text-2xl tabular-nums w-full text-foreground placeholder:text-faint placeholder:font-normal"
+                />
+                <span className="font-mono text-xs uppercase tracking-[0.12em] text-muted">
+                  ETH
+                </span>
+              </div>
+			  {bidInvalid && (
+			    <p
+				  id="bid-amount-error"
+				  className="font-mono text-micro uppercase tracking-[0.12em] text-signal"
+				  role="alert"
+			    >
+				  Enter one plain decimal amount, for example 0.15 or 0,15.
+			    </p>
+			  )}
+              <div className="flex items-center justify-between gap-3">
+                {/* One button. minimumBid already resolves to the reserve while slots
+                    are open, and the lowest winning bid + increment once full. */}
+                <button
+                  type="button"
+                  onClick={() => setBidInput(ethExact(s.minimumBid))}
+                  className={CHIP}
+                >
+                  min {ethCeil(s.minimumBid)} ETH
+                </button>
+                {bidTooLow && (
+                  <span className="font-mono text-micro uppercase tracking-[0.12em] text-signal">
+                    below minimum
+                  </span>
+                )}
+              </div>
+              {actions.wrongChain ? (
+                <button
+                  className={GHOST}
+                  onClick={actions.switchToTargetChain}
+                  disabled={actions.switching}
+                >
+                  {actions.switching ? "switching…" : "switch network"}
+                </button>
+              ) : (
+                <button
+                  className={PRIMARY}
+				  disabled={
+				    writeBlocked ||
+				    !biddable ||
+				    bidInvalid ||
+				    bidWei === null ||
+				    bidWei < s.minimumBid
+				  }
+				  onClick={() => {
+				    if (bidWei !== null && biddable) {
+					  actions.placeBid(bidWei);
+				    }
+				  }}
+                >
+				  {pendingActionLabel(actions, "place bid")}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Your bids */}
+      {isConnected && s.yourBids.length > 0 && (
+        <div>
+          <Label>Your bids / {s.yourBids.length}</Label>
+          <ul className="mt-3 border-t border-line">
+            {s.yourBids.map((b) => {
+			  const raiseRaw = raiseInputs[b.id] || "";
+			  const raiseWei = parseEthInput(raiseRaw);
+			  const raiseNormalized = normalizeDecimalInput(raiseRaw);
+			  const raiseInvalid =
+				raiseRaw.trim() !== "" && raiseNormalized !== "." && raiseWei === null;
+              const inExtensionWindow = now !== 0 && now + 5 * 60 >= s.endTime;
+              const raiseTooLow =
+                inExtensionWindow &&
+				raiseWei !== null &&
+				raiseWei > 0n &&
+				raiseWei < s.minIncreaseForExtension;
+              return (
+                <li
+                  key={b.id}
+                  className="flex items-center gap-3 border-b border-line py-3"
+                >
+                  <span className="font-serif text-base tabular-nums text-foreground w-20">
+                    {eth(b.amount)}{" "}
+                    <span className="font-mono text-micro text-faint">
+                      ETH
+                    </span>
+                  </span>
+                  {s.phase === "active" && (
+                    <span className="font-mono text-micro uppercase tracking-[0.14em] text-up">
+                      winning
+                    </span>
+                  )}
+                  {biddable && (
+					<div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
+                      <input
+                        value={raiseInputs[b.id] ?? ""}
+						onChange={(e) =>
+						  setRaiseInputs((p) => ({ ...p, [b.id]: e.target.value }))
+						}
+                        inputMode="decimal"
+                        placeholder={
+                          inExtensionWindow
+                            ? `+ ${ethCeil(s.minIncreaseForExtension)}`
+                            : "+ eth"
+                        }
+                        aria-label="Raise amount in ETH"
+						aria-invalid={raiseInvalid}
+                        className="w-16 bg-transparent border-b border-line focus:border-foreground outline-none font-mono text-xs tabular-nums text-foreground placeholder:text-faint pb-1 transition-colors"
+                      />
+                      <button
+                        type="button"
+						disabled={
+						  writeBlocked ||
+						  !biddable ||
+						  raiseInvalid ||
+						  raiseWei === null ||
+						  raiseWei === 0n ||
+						  raiseTooLow
+						}
+						onClick={() => {
+						  if (raiseWei !== null && biddable) {
+							actions.increaseBid(b.id, raiseWei);
+						  }
+						}}
+                        className="font-mono text-micro uppercase tracking-[0.14em] text-foreground hover:opacity-60 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity cursor-pointer"
+                      >
+						{raiseInvalid
+						  ? "invalid amount"
+						  : raiseTooLow
+							? "min too low"
+							: pendingActionLabel(actions, "raise")}
+                      </button>
+					{raiseInvalid && (
+					  <span className="basis-full font-mono text-micro text-signal text-right" role="alert">
+						Use one decimal number; comma is accepted.
+					  </span>
+					)}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Pending refund */}
+      {isConnected && s.yourPending > 0n && (
+        <div className="border border-line p-4 flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <Label>Refund available</Label>
+            <span className="font-serif text-lg tabular-nums text-foreground">
+              {eth(s.yourPending)}{" "}
+              <span className="font-mono text-xs text-muted">ETH</span>
+            </span>
+          </div>
+          <button
+            className={GHOST}
+				disabled={writeBlocked}
+				onClick={() => {
+				  if (!writeBlocked) actions.withdraw();
+				}}
+          >
+            {busy ? "…" : "withdraw"}
+          </button>
+        </div>
+      )}
+
+      {/* Permissionless recovery */}
+      {(recoveryAvailable ||
+        emergencyAvailable ||
+		supplyRecoveryAvailable ||
+		mintingRecoveryAvailable) && (
+        <div className="border border-signal/40 p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <Label>Permissionless recovery</Label>
+            <p className="font-sans text-sm text-muted leading-relaxed">
+              {supplyRecoveryAvailable
+                ? `Panorama supply no longer matches the required ${s.expectedNftSupply}. Settlement cannot safely continue; remaining bids can be refunded.`
+				: mintingRecoveryAvailable
+				  ? `Settlement minting is unavailable after the grace period. The auction needs a mint cap of ${s.requiredMintCapForSettlement}; any wallet can move the unminted bids into recovery.`
+                : recoveryAvailable
+                  ? s.activeBids > 0
+                    ? `${s.activeBids} bids still need refunds. Any wallet can process the next batch.`
+                    : "All bids are refunded. One final call releases the remaining accounting; any wallet can send it."
+                  : "The hard emergency deadline has passed. Any wallet can stop settlement and refund every unminted bid."}
+            </p>
+          </div>
+          {!isConnected ? (
+            <WalletPill connectLabel="connect to recover" />
+          ) : actions.wrongChain ? (
+            <button
+              className={GHOST}
+              onClick={actions.switchToTargetChain}
+              disabled={actions.switching}
+            >
+              {actions.switching ? "switching…" : "switch network"}
+            </button>
+          ) : (
+            <button
+              className={GHOST}
+			  disabled={writeBlocked}
+			  onClick={() =>
+				!writeBlocked && supplyRecoveryAvailable
+				  ? actions.recoverFromSupplyMismatch(45)
+				  : !writeBlocked && mintingRecoveryAvailable
+					? actions.recoverFromMintingUnavailable(45)
+				  : !writeBlocked && recoveryAvailable
+					? actions.refundAll(45)
+					: !writeBlocked
+						? actions.emergencyRefund(45)
+						: undefined
+			  }
+            >
+              {busy
+                ? "confirming…"
+                : supplyRecoveryAvailable
+                  ? "recover from supply mismatch"
+				  : mintingRecoveryAvailable
+					? "recover unavailable minting"
+                  : recoveryAvailable
+                    ? s.activeBids > 0
+                      ? "refund next 45"
+                      : "finish recovery"
+                    : "start emergency refund"}
+            </button>
+          )}
+          <Link
+            href="/recovery"
+            className="font-mono text-micro uppercase tracking-[0.14em] text-muted hover:text-foreground transition-colors"
+          >
+            all recovery tools →
+          </Link>
+        </div>
+      )}
+
+      {/* Standings — live bids and minted winners (rail scrolls). Hidden before the sale
+          opens: there is nothing to rank yet. */}
+      {phaseView !== "upcoming" && (
+        <Standings
+          bids={s.allBids}
+          won={s.wonBids}
+          firstTokenId={s.firstTokenId}
+          you={address}
+          activeBids={s.activeBids}
+          maxUnits={s.maxUnits}
+          isFull={s.isFull}
+          clearing={heroClearing}
+          phase={s.phase}
+          enableEns={!demo}
+          wonStatus={s.wonStatus}
+          wonExpectedCount={s.wonExpectedCount}
+          wonIntegrityIssue={s.wonIntegrityIssue}
+          onRetryWon={s.refetchWon}
+        />
+      )}
+
+      {lastTx && (
+        <a
+          href={getBlockExplorerTxUrl(lastTx)}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-micro uppercase tracking-[0.18em] text-muted hover:text-foreground transition-colors"
+        >
+          view transaction ↗
+        </a>
+      )}
+    </>
+  );
+
+  return (
+    <div className="min-h-dvh flex flex-col bg-background text-foreground">
+      <Header />
+      <div className="h-16 shrink-0" />
+
+      {/* HERO PRIMER — the whole panorama, full-width and scrollable left to right, then the
+          title and a short description, all readable without scrolling. */}
+      <section className="w-full">
+        <div className="mt-4 md:mt-8">
+          <HeroPanorama />
+        </div>
+        <div className="mx-auto max-w-[900px] px-5 md:px-8 pt-8 md:pt-12 pb-12 md:pb-16">
+          <Label>Panorama Season 2</Label>
+          <h1 className="font-serif font-medium text-[1.9rem] md:text-[2.9rem] leading-[1.03] tracking-[-0.02em] text-foreground mt-4 max-w-[20ch] text-balance">
+            A chronicle of invention, lit by the mood of the market.
+          </h1>
+          <p className="mt-5 font-sans text-base md:text-lg text-muted leading-relaxed max-w-[58ch] text-pretty">
+            Panorama turns live market data into images. Season 2 is ninety works tracing the
+            history of technology in order, each lit by whatever mood the market gives it. This
+            auction sells all ninety at once, at a single clearing price.
+          </p>
+          <div className="mt-8 inline-flex items-center gap-2 font-mono text-micro uppercase tracking-[0.18em] text-faint">
+            <span className="animate-[breathe_2.4s_var(--ease-out)_infinite]">↓</span>
+            Bid and full details below
+          </div>
+        </div>
+      </section>
+
+      {/* TWO PANES — bidding rail (sticky on desktop) and the details article */}
+      <div className="flex flex-col lg:flex-row border-t border-line">
+        {/* Bidding: mobile FIRST, desktop LEFT and sticky so it stays usable while reading. */}
+        <aside
+          className={`lg:shrink-0 border-b lg:border-b-0 lg:border-r border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
+            railOpen ? "lg:w-[440px] xl:w-[500px]" : "lg:w-[46px]"
+          }`}
+          style={{ transitionTimingFunction: "var(--ease-out)" }}
+        >
+          {/* Collapsed strip (desktop only) */}
+          {!railOpen && (
+            <button
+              type="button"
+              onClick={() => setRailOpen(true)}
+              title="Expand bids"
+              aria-label="Expand bids panel"
+              className="hidden lg:flex flex-col items-center gap-5 w-full py-4 hover:bg-foreground/[0.03] transition-colors cursor-pointer group"
+            >
+              <LuChevronsRight
+                size={16}
+                className="text-muted group-hover:text-foreground"
+              />
+              <span className="font-mono text-micro uppercase tracking-[0.24em] text-muted [writing-mode:vertical-rl] rotate-180">
+                Bids {s.activeBids}/{s.maxUnits}
+              </span>
+              <LiveDot phase={phaseView} />
+            </button>
+          )}
+
+          {/* Full content: always on mobile, on desktop only when open */}
+          <div
+            className={`${railOpen ? "" : "lg:hidden"} flex flex-col gap-6 p-5 md:p-6 animate-modal-in`}
+          >
+            {railBody}
+          </div>
+        </aside>
+
+        {/* Details — the deeper read: the work, the sale, how it works, and the FAQ. */}
+        <main className="lg:flex-1 lg:min-w-0">
+          <AuctionIntro
+            durationHours={durationHours}
+            incrementPct={s.minIncrementBps ? s.minIncrementBps / 100 : 5}
+            reserve={s.reservePrice > 0n ? eth(s.reservePrice) : "0.1"}
+            hardEndLabel={
+              s.absoluteEndTime > 0 ? fmtDateUTC(s.absoluteEndTime) : undefined
+            }
+          />
+        </main>
+      </div>
+    </div>
+  );
+}

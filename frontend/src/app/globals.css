@@ -1,0 +1,416 @@
+@import "tailwindcss";
+
+/* Tailwind 4: class-based dark mode via .dark on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ───────────────────────────────────────────────
+   Panorama — theme tokens (light = default, .dark flips)
+   ─────────────────────────────────────────────── */
+
+:root {
+	/* light (gallery white) */
+	--background: #f7f6f3;
+	--surface:    #ffffff;
+	--foreground: #111111;
+	--muted:      #787774;
+	--faint:      #b8b6b1;
+	--line:       #eaeaea;
+	--accent:     #111111;
+	--signal:     #9f2f2d;
+	--up:         #1f7a4d;
+
+	/* motion */
+	--ease-out:   cubic-bezier(0.2, 0.8, 0.2, 1);
+	--dur-fast:   120ms;
+	--dur:        180ms;
+	--dur-slow:   360ms;
+
+	/* layout */
+	--pad-x:       24px;
+	--pad-x-md:    56px;
+	--pad-x-lg:    96px;
+	--max-w:      1600px;
+	--z-tooltip:   1000;
+
+	color-scheme: light;
+}
+
+.dark {
+	/* dark (obsidian gallery) */
+	--background: #0a0a0a;
+	--surface:    #141414;
+	--foreground: #ededed;
+	--muted:      #b0aba4;
+	--faint:      #7a756f;
+	--line:       #1f1f1f;
+	--accent:     #ededed;
+	--signal:     #c23e3b;
+	--up:         #52b788;
+
+	color-scheme: dark;
+}
+
+@theme {
+	--breakpoint-2xs: 24.05rem;
+	--breakpoint-xs:  26.5rem;
+
+	--color-background: var(--background);
+	--color-surface:    var(--surface);
+	--color-foreground: var(--foreground);
+	--color-muted:      var(--muted);
+	--color-faint:      var(--faint);
+	--color-line:       var(--line);
+	--color-accent:     var(--accent);
+	--color-signal:     var(--signal);
+	--color-up:         var(--up);
+
+	/* fonts */
+	--font-mono:    var(--font-jetbrains-mono);
+	--font-serif:   var(--font-hanken);
+	--font-sans:    var(--font-hanken);
+	--font-display: var(--font-hanken);
+
+	/* type scale */
+	--text-micro:   10px;
+	--text-micro--line-height: 1.3;
+	--text-micro--letter-spacing: 0.08em;
+
+	--text-xs:      11px;
+	--text-xs--line-height: 1.4;
+
+	--text-sm:      13px;
+	--text-sm--line-height: 1.5;
+
+	--text-base:    15px;
+	--text-base--line-height: 1.55;
+
+	--text-lg:      19px;
+	--text-lg--line-height: 1.35;
+
+	--text-xl:      28px;
+	--text-xl--line-height: 1.15;
+
+	--text-2xl:     44px;
+	--text-2xl--line-height: 1.05;
+
+	--text-3xl:     72px;
+	--text-3xl--line-height: 0.98;
+
+	--animate-modal-in: modal-in 200ms var(--ease-out);
+	--animate-slide-from-right: slide-from-right 300ms var(--ease-out) backwards;
+}
+
+html, body {
+	background: var(--background);
+	color: var(--foreground);
+}
+
+/* Reserve gutter for the scrollbar so body { overflow: hidden } doesn't
+   shift fixed-position chrome sideways when a modal opens. */
+html {
+	scrollbar-gutter: stable;
+}
+
+body {
+	font-family: var(--font-sans);
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+@layer base {
+	button, input, textarea, select { font: inherit; }
+}
+
+/* Selection */
+::selection { background: var(--foreground); color: var(--background); }
+
+/* ───────────────────────────────────────────────
+   keyframes — kept for homepage candlestick intro
+   ─────────────────────────────────────────────── */
+
+@keyframes extend-candle-width {
+	from { width: var(--initial-width); }
+	to   { width: var(--final-width); }
+}
+@keyframes extend-candle-height {
+	to { height: var(--final-height); }
+}
+@keyframes align-candle-position {
+	from { top: var(--initial-top); }
+	to   { top: 0; }
+}
+@keyframes fade-out-wicks {
+	from { opacity: 1; }
+	to   { opacity: 0; }
+}
+@keyframes fade-out-text {
+	0%   { opacity: 1; display: block; }
+	99%  { opacity: 0; display: block; }
+	100% { opacity: 0; display: none; }
+}
+@keyframes fade-in-text {
+	0%   { opacity: 0; display: none; }
+	1%   { opacity: 0; display: block; }
+	100% { opacity: 1; display: block; }
+}
+@keyframes breathe {
+	0%, 100% { opacity: 1; }
+	50%      { opacity: 0.4; }
+}
+@keyframes modal-in {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-from-right {
+	from { opacity: 0; transform: translateX(48px); }
+	to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes menu-item-in {
+	from { opacity: 0; transform: translateX(8px); }
+	to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes menu-item-out {
+	from { opacity: 1; transform: translateX(0); }
+	to   { opacity: 0; transform: translateX(8px); }
+}
+@keyframes drawer-in {
+	from { transform: translateX(100%); }
+	to   { transform: translateX(0); }
+}
+@keyframes drawer-out {
+	from { transform: translateX(0); }
+	to   { transform: translateX(100%); }
+}
+@keyframes backdrop-fade-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+@keyframes backdrop-fade-out {
+	from { opacity: 1; }
+	to   { opacity: 0; }
+}
+@keyframes hairline-grow {
+	from { transform: scaleX(0); }
+	to   { transform: scaleX(1); }
+}
+@keyframes stats-row-in {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stats-shimmer {
+	from { transform: translateX(-100%); }
+	to   { transform: translateX(100%); }
+}
+
+/* ───────────────────────────────────────────────
+   utilities
+   ─────────────────────────────────────────────── */
+
+/* Hairline — used for dividers that render crisp on retina */
+.hairline { background: var(--line); height: 1px; width: 100%; }
+
+/* Default: square corners and no shadows, applied via utility classes.
+   Third-party surfaces (RainbowKit, dialogs) keep their own radii. */
+
+/* Hide scrollbars globally (art is primary) */
+html, body {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+
+*  { -ms-overflow-style: none; scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
+/* Explicit opt-in for long-form scroll surfaces (e.g. the tableau modal).
+   Thumb is keyed to --foreground so it stays visible on either theme.
+   On iOS Safari the scrollbar still auto-hides, but Android Chrome,
+   Firefox, and desktop all get a persistent thin bar as a scroll
+   affordance. */
+.overlay-scroll-content {
+	-ms-overflow-style: auto;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--foreground) 30%, transparent) transparent;
+}
+.overlay-scroll-content::-webkit-scrollbar { display: block; width: 6px; }
+.overlay-scroll-content::-webkit-scrollbar-track { background: transparent; }
+.overlay-scroll-content::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--foreground) 30%, transparent);
+	border-radius: 3px;
+}
+.overlay-scroll-content::-webkit-scrollbar-thumb:hover {
+	background: color-mix(in srgb, var(--foreground) 55%, transparent);
+}
+
+/* Pages that are long-form (tableau) opt into a visible page scrollbar */
+html.page-scroll, html.page-scroll body {
+	scrollbar-width: thin;
+	-ms-overflow-style: auto;
+}
+html.page-scroll::-webkit-scrollbar,
+html.page-scroll body::-webkit-scrollbar {
+	display: block;
+	width: 8px;
+}
+html.page-scroll::-webkit-scrollbar-track,
+html.page-scroll body::-webkit-scrollbar-track {
+	background: transparent;
+}
+html.page-scroll::-webkit-scrollbar-thumb,
+html.page-scroll body::-webkit-scrollbar-thumb {
+	background: color-mix(in srgb, var(--foreground) 22%, transparent);
+	border-radius: 4px;
+}
+html.page-scroll::-webkit-scrollbar-thumb:hover,
+html.page-scroll body::-webkit-scrollbar-thumb:hover {
+	background: color-mix(in srgb, var(--foreground) 40%, transparent);
+}
+
+/* Chrome text over images — header/caption/footer controls sit on top of
+   the canvas at all padding levels (image extends under the chrome at 0%).
+   A subtle dark shadow keeps bright text legible on bright image regions.
+   The SVG rule gives the same treatment to icon strokes, which text-shadow
+   can't reach. */
+.chrome-text { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.chrome-text svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
+
+/* Bracketed mono link — the recurring CTA */
+.bracket-link {
+	font-family: var(--font-mono);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-size: var(--text-xs);
+	color: var(--foreground);
+	transition: opacity var(--dur) var(--ease-out);
+}
+.bracket-link::before { content: "[ "; }
+.bracket-link::after  { content: " ]"; }
+.bracket-link:hover   { opacity: 0.55; }
+
+/* Inverted variant kept for compatibility */
+.bracket-link--inverse {
+	color: var(--foreground);
+}
+
+/* Scrubbable text button — drag horizontally to change value */
+.scrub {
+	cursor: ew-resize;
+	touch-action: none;
+	user-select: none;
+}
+body.is-scrubbing, body.is-scrubbing * { cursor: ew-resize !important; }
+body.is-scrubbing-xy, body.is-scrubbing-xy * { cursor: ns-resize !important; }
+
+/* Tooltips render through TooltipProvider at the body level so they clear
+   clipped panes and can be clamped to the viewport. */
+.app-tooltip {
+	position: fixed;
+	visibility: hidden;
+	padding: 4px 8px;
+	background: var(--foreground);
+	color: var(--background);
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.15em;
+	line-height: 1;
+	width: max-content;
+	max-width: min(320px, calc(100vw - 16px));
+	max-height: calc(100vh - 16px);
+	overflow-wrap: anywhere;
+	overflow-y: auto;
+	pointer-events: none;
+	z-index: var(--z-tooltip);
+}
+body.is-scrubbing .app-tooltip { display: none; }
+
+/* Long-form variant — for sentence-length tooltips that can't fit on one line.
+   Drops uppercase/mono styling, allows wrapping, caps width. */
+.app-tooltip--wrap {
+	text-transform: none;
+	letter-spacing: 0.02em;
+	line-height: 1.4;
+	padding: 8px 10px;
+	font-family: var(--font-sans, system-ui);
+	font-size: 12px;
+	text-align: center;
+}
+.app-tooltip--admin {
+	font-family: var(--font-mono);
+}
+
+
+
+/* Always-visible thin horizontal scrollbar for the admin history strip. */
+.admin-scroll-x {
+	scrollbar-width: thin; /* Firefox + Chrome 121+ */
+	scrollbar-color: rgba(115, 115, 115, 0.6) rgba(23, 23, 23, 0.4);
+	-ms-overflow-style: auto;
+}
+.admin-scroll-x::-webkit-scrollbar {
+	display: block;
+	height: 8px;
+}
+.admin-scroll-x::-webkit-scrollbar-track {
+	background: rgba(23, 23, 23, 0.4);
+	border-radius: 4px;
+}
+.admin-scroll-x::-webkit-scrollbar-thumb {
+	background: rgba(115, 115, 115, 0.6);
+	border-radius: 4px;
+}
+.admin-scroll-x::-webkit-scrollbar-thumb:hover {
+	background: rgba(140, 140, 140, 0.8);
+}
+
+.admin-loading-bar {
+	width: 42%;
+	transform: translateX(-110%);
+	animation: admin-loading-bar 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes admin-loading-bar {
+	0% {
+		transform: translateX(-110%);
+	}
+	100% {
+		transform: translateX(250%);
+	}
+}
+
+/* Slim mono range slider for the painting-pane settings popover. Track is
+   a thin line in --line, thumb is a small foreground square so it reads
+   like the rest of the terminal panes. */
+.terminal-range {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 4px;
+	background: var(--line);
+	border-radius: 0;
+	outline: none;
+}
+.terminal-range::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	background: var(--foreground);
+	border: none;
+	border-radius: 0;
+	cursor: pointer;
+}
+.terminal-range::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	background: var(--foreground);
+	border: none;
+	border-radius: 0;
+	cursor: pointer;
+}
+.terminal-range:disabled::-webkit-slider-thumb {
+	background: var(--muted);
+}
+.terminal-range:disabled::-moz-range-thumb {
+	background: var(--muted);
+}
