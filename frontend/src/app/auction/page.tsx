@@ -661,11 +661,10 @@ export default function AuctionPage() {
       <Header />
       <div className="h-16 shrink-0" />
 
-      {/* HERO — panorama + masthead sized to exactly one viewport height on desktop, so the
-          scroll button lands on the bottom edge and "there is more below" needs no sentence.
-          Title and primer split into two columns on wide screens; type is fluid (clamp). */}
-      <section className="w-full flex flex-col lg:h-[calc(100dvh-4rem)] lg:min-h-[620px]">
-        <div className="mt-4 md:mt-6 h-[52vh] lg:h-auto lg:flex-1 lg:min-h-0">
+      {/* HERO — together with the 64px header offset, the panorama and masthead fill exactly
+          one screen. The image flexes around the text so this remains true on every viewport. */}
+      <section className="w-full h-[calc(100dvh-4rem)] flex flex-col">
+        <div className="mt-4 md:mt-6 flex-1 min-h-0">
           <HeroPanorama />
         </div>
         <div className="mx-auto w-full 4xl:max-w-[2400px] min-[3440px]:max-w-[2720px] px-5 md:px-10 xl:px-14 4xl:px-16 pt-8 md:pt-12 lg:pt-8 pb-8 md:pb-10">
