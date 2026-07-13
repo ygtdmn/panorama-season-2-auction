@@ -109,6 +109,29 @@ function Countdown({
 
 // Scheduled Season 2 auction open, before any contract exists to read a startTime from.
 const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
+// Scheduled duration (24h) — only used to give the calendar event an end time.
+const AUCTION_END_MS = AUCTION_LAUNCH_MS + 24 * 60 * 60 * 1000;
+
+const CAL_TITLE = "Panorama Season 2 Auction opens";
+const CAL_DETAILS =
+  "The Panorama Season 2 auction (tokens #91-#180) opens. " +
+  "Place your bid at https://season2.panorama.garden";
+
+// ICS/Google Calendar timestamp: YYYYMMDDTHHMMSSZ (UTC).
+function calStamp(ms: number): string {
+  const d = new Date(ms);
+  const p = (x: number) => String(x).padStart(2, "0");
+  return (
+    `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}` +
+    `T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`
+  );
+}
+
+const GOOGLE_CAL_URL =
+  "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+  `&text=${encodeURIComponent(CAL_TITLE)}` +
+  `&dates=${calStamp(AUCTION_LAUNCH_MS)}/${calStamp(AUCTION_END_MS)}` +
+  `&details=${encodeURIComponent(CAL_DETAILS)}`;
 
 // Pre-deploy countdown to the announced open. Runs off the device clock (there is no chain
 // time yet); starts null so the server and first client render match, then ticks every second.
@@ -329,6 +352,14 @@ export default function AuctionPage() {
         </span>
         <LaunchCountdown />
         <LaunchDate />
+        <a
+          href={GOOGLE_CAL_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-micro uppercase tracking-[0.18em] text-muted hover:text-foreground transition-colors pt-1"
+        >
+          Add to Google Calendar ↗
+        </a>
       </div>
       <p className="font-sans text-base text-muted leading-relaxed max-w-[38ch]">
         The Season 2 auction is not live yet. Read the full details on the right,
