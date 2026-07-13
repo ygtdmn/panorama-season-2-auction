@@ -9,6 +9,7 @@ import { useToast } from "@/app/components/Toast";
 import {
   getBlockExplorerTxUrl,
   PANORAMA_AUCTION_ADDRESS,
+  SITE_URL,
 } from "@/lib/constants";
 import { describeAuctionError } from "@/lib/auctionErrors";
 import type { WriteName } from "@/app/auction/hooks/useAuctionActions";
@@ -181,7 +182,10 @@ export default function AuctionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, s.phase, s.yourBids]);
 
-  const loading = !demo && !s.ready && !s.readFailed;
+  // No contract wired up yet (pre-deploy): keep the full page and the details article,
+  // but the rail advertises the auction instead of trying to read state that isn't there.
+  const comingSoon = !PANORAMA_AUCTION_ADDRESS && !demo;
+  const loading = !comingSoon && !demo && !s.ready && !s.readFailed;
   const biddable =
     s.phase === "active" &&
     !s.paused &&
@@ -227,25 +231,6 @@ export default function AuctionPage() {
 		!s.supplyMismatched &&
 		!s.mintingUnavailable;
 
-  if (!PANORAMA_AUCTION_ADDRESS && !demo) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <Header />
-        <div className="h-20 shrink-0" />
-        <main className="mx-auto w-full max-w-[1180px] px-5 md:px-10 mt-16">
-          <Label>Panorama Season 2</Label>
-          <h1 className="font-serif text-2xl md:text-3xl leading-[0.98] mt-4">
-            The auction is not live yet.
-          </h1>
-          <p className="font-sans text-sm text-muted mt-4 max-w-[46ch]">
-            Append <span className="font-mono text-foreground">?demo=1</span> to
-            preview the full bidding flow with in-memory data.
-          </p>
-        </main>
-      </div>
-    );
-  }
-
   const statusNote = (() => {
     if (s.phase === "settled")
       return "Settled. Winners minted highest-first; excess refunded.";
@@ -266,7 +251,41 @@ export default function AuctionPage() {
     return "";
   })();
 
-  const railBody = loading ? (
+  const railBody = comingSoon ? (
+    <div className="flex flex-col gap-4 py-4">
+      <span className="inline-flex items-center gap-2">
+        <LiveDot phase="upcoming" />
+        <span className="font-mono text-micro uppercase tracking-[0.2em] text-muted">
+          Coming soon
+        </span>
+      </span>
+      <h2 className="font-serif font-medium text-2xl leading-[1.05] tracking-[-0.01em] text-foreground">
+        Bidding opens soon.
+      </h2>
+      <p className="font-sans text-sm text-muted leading-relaxed max-w-[38ch]">
+        The Season 2 auction is not live yet. Read the full details on the right,
+        and check back to place your bid when it opens.
+      </p>
+      <div className="flex flex-col gap-2 mt-1">
+        <a
+          href={SITE_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-micro uppercase tracking-[0.18em] text-muted hover:text-foreground transition-colors"
+        >
+          Enter Panorama ↗
+        </a>
+        <a
+          href={`${SITE_URL}/terminal`}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-micro uppercase tracking-[0.18em] text-muted hover:text-foreground transition-colors"
+        >
+          Go to terminal ↗
+        </a>
+      </div>
+    </div>
+  ) : loading ? (
     <div className="flex flex-col gap-3 py-10 items-center text-center">
       <Label>Loading</Label>
       <p className="font-sans text-sm text-muted">Reading the auction state…</p>
