@@ -107,6 +107,76 @@ function Countdown({
   );
 }
 
+// Scheduled Season 2 auction open, before any contract exists to read a startTime from.
+const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
+
+// Pre-deploy countdown to the announced open. Runs off the device clock (there is no chain
+// time yet); starts null so the server and first client render match, then ticks every second.
+function LaunchCountdown() {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const left =
+    now === null ? null : Math.max(0, Math.floor((AUCTION_LAUNCH_MS - now) / 1000));
+  if (left === 0)
+    return (
+      <span className="font-serif font-medium text-3xl tracking-[-0.02em] text-foreground leading-none">
+        Opening now.
+      </span>
+    );
+  const pad = (x: number) => String(x).padStart(2, "0");
+  const segments: { value: number | null; label: string }[] = [
+    { value: left === null ? null : Math.floor(left / 86400), label: "days" },
+    { value: left === null ? null : Math.floor((left % 86400) / 3600), label: "hrs" },
+    { value: left === null ? null : Math.floor((left % 3600) / 60), label: "min" },
+    { value: left === null ? null : left % 60, label: "sec" },
+  ];
+  return (
+    <div className="flex items-end gap-6 md:gap-8">
+      {segments.map((seg) => (
+        <div key={seg.label} className="flex flex-col items-start gap-3">
+          <span className="font-serif font-medium text-5xl md:text-6xl tabular-nums tracking-[-0.02em] text-foreground leading-none">
+            {seg.value === null ? (
+              <span className="text-faint">··</span>
+            ) : (
+              pad(seg.value)
+            )}
+          </span>
+          <span className="font-mono text-micro uppercase tracking-[0.18em] text-faint">
+            {seg.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// The announced open, rendered in the visitor's own locale and timezone. Client-only (starts
+// null) so the server render and hydration agree instead of formatting in the server's zone.
+function LaunchDate() {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    setLabel(
+      new Date(AUCTION_LAUNCH_MS).toLocaleString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }),
+    );
+  }, []);
+  return (
+    <span className="font-mono text-micro uppercase tracking-[0.14em] text-faint">
+      {label ?? "···"}
+    </span>
+  );
+}
+
 export default function AuctionPage() {
   const toast = useToast();
   const {
@@ -252,21 +322,19 @@ export default function AuctionPage() {
   })();
 
   const railBody = comingSoon ? (
-    <div className="flex flex-col gap-4 py-4">
-      <span className="inline-flex items-center gap-2">
-        <LiveDot phase="upcoming" />
-        <span className="font-mono text-micro uppercase tracking-[0.2em] text-muted">
-          Coming soon
+    <div className="flex flex-col gap-10 py-10 md:py-14">
+      <div className="flex flex-col gap-5">
+        <span className="font-mono text-micro uppercase tracking-[0.24em] text-faint">
+          Bidding opens in
         </span>
-      </span>
-      <h2 className="font-serif font-medium text-2xl leading-[1.05] tracking-[-0.01em] text-foreground">
-        Bidding opens soon.
-      </h2>
-      <p className="font-sans text-sm text-muted leading-relaxed max-w-[38ch]">
+        <LaunchCountdown />
+        <LaunchDate />
+      </div>
+      <p className="font-sans text-base text-muted leading-relaxed max-w-[38ch]">
         The Season 2 auction is not live yet. Read the full details on the right,
         and check back to place your bid when it opens.
       </p>
-      <div className="flex flex-col gap-2 mt-1">
+      <div className="flex flex-col gap-5 pt-2">
         <a
           href={SITE_URL}
           target="_blank"
