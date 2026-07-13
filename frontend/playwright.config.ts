@@ -31,7 +31,7 @@ export default defineConfig({
 	],
 	webServer: {
 		command: "node e2e/start-next.mjs",
-		url: "http://127.0.0.1:5471/auction",
+		url: "http://127.0.0.1:5471/",
 		reuseExistingServer: false,
 		timeout: 180_000,
 	},

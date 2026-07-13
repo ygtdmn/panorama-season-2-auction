@@ -34,8 +34,9 @@ const nextConfig: NextConfig = {
 	devIndicators: false,
 	async redirects() {
 		return [
-			// The auction is the whole app — send the bare domain to it.
-			{ source: "/", destination: "/auction", permanent: false },
+			// The auction is the whole app and now lives at the root. Keep the old
+			// /auction path working for anyone with a bookmark or shared link.
+			{ source: "/auction", destination: "/", permanent: false },
 		];
 	},
 	images: {

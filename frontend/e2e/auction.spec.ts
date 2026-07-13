@@ -38,7 +38,7 @@ test.afterEach(async () => {
 test.describe("bidding", () => {
 	test("places a bid at the exact advertised minimum", async ({ page }) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await expect(page.getByText("Place a bid")).toBeVisible();
 
 		await connectWallet(page);
@@ -59,7 +59,7 @@ test.describe("bidding", () => {
 		await fillBids(S.auction, 89, eth(0.3));
 
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await connectWallet(page);
 
 		await page.getByRole("button", { name: /^min 0\.105 eth$/i }).click();
@@ -87,7 +87,7 @@ test.describe("bidding", () => {
 
 	test("a displaced bid shows the outbid notice", async ({ page }) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await connectWallet(page);
 
 		await page.getByRole("button", { name: /^min 0\.1 eth$/i }).click();
@@ -106,7 +106,7 @@ test.describe("bidding", () => {
 		const end = Number(await readAuction<bigint>(S.auction, "endTime"));
 
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await expect(page.getByText("Place a bid")).toBeVisible();
 
 		await warpTo(end - 120);
@@ -119,7 +119,7 @@ test.describe("bidding", () => {
 
 	test("a wallet rejection returns the form to idle without an error toast", async ({ page }) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await connectWallet(page);
 
 		await page.getByRole("button", { name: /^min 0\.1 eth$/i }).click();
@@ -137,7 +137,7 @@ test.describe("bidding", () => {
 
 	test("malformed bid text is rejected without changing its magnitude", async ({ page }) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await connectWallet(page);
 
 		const input = page.getByLabel("Bid amount in ETH");
@@ -151,7 +151,7 @@ test.describe("bidding", () => {
 
 	test("a replaced transaction does not wedge the UI", async ({ page }) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 		await connectWallet(page);
 
 		await page.getByRole("button", { name: /^min 0\.1 eth$/i }).click();
@@ -181,7 +181,7 @@ test.describe("bidding", () => {
 
 test.describe("wallet dialog accessibility", () => {
 	test("places and traps focus, closes on Escape, and restores the trigger", async ({ page }) => {
-		await page.goto("/auction");
+		await page.goto("/");
 
 		const trigger = page.getByRole("button", { name: "connect wallet" }).first();
 		await trigger.click();
@@ -241,7 +241,7 @@ test.describe("settlement and recovery", () => {
 
 		// The public board persists after settlement, fed by Won events.
 		// exact: true so the FAQ copy ("Winners are minted after…") doesn't match.
-		await page.goto("/auction");
+		await page.goto("/");
 		await expect(page.getByText("minted", { exact: true }).first()).toBeVisible({
 			timeout: 30_000,
 		});
@@ -333,7 +333,7 @@ test.describe("settlement and recovery", () => {
 				}),
 			});
 		});
-		await page.goto("/auction");
+		await page.goto("/");
 		await expect(page.getByText(/Final standings are not being reported as complete/)).toBeVisible({
 			timeout: 30_000,
 		});
@@ -344,7 +344,7 @@ test.describe("settlement and recovery", () => {
 
 test.describe("demo", () => {
 	test("demo mode runs the bidding flow fully in memory", async ({ page }) => {
-		await page.goto("/auction?demo=1");
+		await page.goto("/?demo=1");
 		await expect(page.getByText(/demo/i).first()).toBeVisible();
 
 		await page.getByRole("button", { name: /^min 0\.1 eth$/i }).click();
@@ -358,7 +358,7 @@ test.describe("mobile", () => {
 		page,
 	}) => {
 		await installWallet(page, BIDDER);
-		await page.goto("/auction");
+		await page.goto("/");
 
 		// The hero primer is first, but the bid form must come before the long details
 		// essay so nobody has to scroll past an essay to bid in the final minutes.

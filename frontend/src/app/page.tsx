@@ -11,12 +11,12 @@ import {
   PANORAMA_AUCTION_ADDRESS,
 } from "@/lib/constants";
 import { describeAuctionError } from "@/lib/auctionErrors";
-import type { WriteName } from "./hooks/useAuctionActions";
-import { useAuctionSession } from "./hooks/useAuctionSession";
-import { HeroPanorama } from "./components/HeroPanorama";
-import { DemoBar } from "./components/DemoBar";
-import { Standings } from "./components/Standings";
-import { AuctionIntro } from "./components/AuctionIntro";
+import type { WriteName } from "@/app/auction/hooks/useAuctionActions";
+import { useAuctionSession } from "@/app/auction/hooks/useAuctionSession";
+import { HeroPanorama } from "@/app/auction/components/HeroPanorama";
+import { DemoBar } from "@/app/auction/components/DemoBar";
+import { Standings } from "@/app/auction/components/Standings";
+import { AuctionIntro } from "@/app/auction/components/AuctionIntro";
 import {
   pendingActionLabel,
   TransactionStatus,
@@ -34,7 +34,7 @@ import {
   parseEthInput,
   useChainNow,
   type DisplayPhase,
-} from "./components/ui";
+} from "@/app/auction/components/ui";
 
 const PHASE_COPY: Record<DisplayPhase, string> = {
   upcoming: "Upcoming",

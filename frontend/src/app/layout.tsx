@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 		title: "Panorama Season 2 Auction",
 		description,
 		type: "website",
-		url: `${SITE_URL}/auction`,
+		url: SITE_URL,
 		siteName: "Panorama",
 		locale: "en_US",
 		images: [{ url: OG_IMAGE_URL, width: 1920, height: 1080, alt: "Panorama", type: "image/jpeg" }],
