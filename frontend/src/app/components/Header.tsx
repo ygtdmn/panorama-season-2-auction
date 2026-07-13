@@ -12,7 +12,7 @@ export const HEADER_HEIGHT = HEADER_TOP + HEADER_ROW;
 const TYPE = "font-mono text-[12px] uppercase tracking-[0.2em] tabular-nums cursor-pointer";
 
 // Minimal fixed header for the standalone auction app, styled to match the main
-// Panorama site chrome. Left: PANORAMA SEASON 2. Right: ENTER PANORAMA + color mode.
+// Panorama site chrome. Left: PANORAMA SEASON 2. Right: color mode toggle.
 export default function Header() {
 	const { toggle } = useTheme();
 	return (
@@ -35,9 +35,6 @@ export default function Header() {
 			</div>
 
 			<div className="flex items-center whitespace-nowrap" style={{ gap: 10 }}>
-				<a href={SITE_URL} className={`${TYPE} text-foreground leading-none`}>
-					ENTER PANORAMA
-				</a>
 				<button
 					type="button"
 					onClick={toggle}
