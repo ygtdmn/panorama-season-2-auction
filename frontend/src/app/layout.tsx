@@ -24,7 +24,7 @@ const description =
 
 export const metadata: Metadata = {
 	metadataBase: new URL(SITE_URL),
-	title: "Panorama Season 2 Auction",
+	title: "Panorama: Season 2",
 	description,
 	icons: {
 		icon: [{ url: "/favicon.png" }],
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 	authors: [{ name: "Yigit Duman" }, { name: "DeltaSauce" }],
 	robots: "index, follow",
 	openGraph: {
-		title: "Panorama Season 2 Auction",
+		title: "Panorama: Season 2",
 		description,
 		type: "website",
 		url: SITE_URL,
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Panorama Season 2 Auction",
+		title: "Panorama: Season 2",
 		description,
 		creator: "@yigitduman",
 		images: [OG_IMAGE_URL],

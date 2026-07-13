@@ -29,7 +29,7 @@ export function getEvmNowUrl(address: string): string {
 	return `https://evm.now/${address}`;
 }
 
-export const OG_IMAGE_URL = `${CDN_BASE_URL}/og-preview.jpg`;
+export const OG_IMAGE_URL = `${CDN_BASE_URL}/season2/season2-og-preview.webp`;
 
 export function getBlockExplorerAddressUrl(address: string): string {
 	return `${BLOCK_EXPLORER_URL}/address/${address}`;
@@ -39,7 +39,7 @@ export function getBlockExplorerTxUrl(hash: string): string {
 	return `${BLOCK_EXPLORER_URL}/tx/${hash}`;
 }
 
-export const PREREVEAL_IMAGE_URL = `${CDN_BASE_URL}/prereveal.webp`;
+export const PREREVEAL_IMAGE_URL = `${CDN_BASE_URL}/season2/season2-prereveal.webp`;
 
 export function getDemoImageUrl(index: number): string {
 	return `${CDN_BASE_URL}/demo${index}.jpg`;

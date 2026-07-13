@@ -1,10 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import { CDN_BASE_URL } from "@/lib/constants";
 
 // Demo header: five paintings in the new Season 2 art style, shown as one scrollable strip so
-// people can get a feel for the work. Files live in /public/header.
-const IMAGES = [1, 2, 3, 4, 5].map((n) => `/header/${n}.webp`);
+// people can get a feel for the work. Served from the CDN.
+const IMAGES = [1, 2, 3, 4, 5].map(
+	(n) => `${CDN_BASE_URL}/season2/header/${n}.webp`,
+);
 
 /**
  * The panorama as a full-width, horizontally scrollable band — the same left-to-right read as
