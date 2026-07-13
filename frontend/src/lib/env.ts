@@ -97,6 +97,16 @@ export function assertProductionEnv(): void {
 	const prod = platformProd && ENV.chainId === 1 && !ENV.demo;
 	if (!prod) return;
 
+	// Pre-launch: no auction wired up yet, so the site only renders the coming-soon screen.
+	// It never connects a wallet or leans on the RPC for live bidding state, so the strict
+	// RPC/WalletConnect requirements don't apply until an auction address exists.
+	if (!ENV.auctionAddress) {
+		console.warn(
+			"[env] NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS is unset; the site will render the pre-launch screen.",
+		);
+		return;
+	}
+
 	const problems: string[] = [];
 	if (!ENV.rpcUrl) {
 		problems.push(
@@ -108,14 +118,9 @@ export function assertProductionEnv(): void {
 			"NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is required in production: without it mobile wallets cannot connect.",
 		);
 	}
-	if (ENV.auctionAddress && ENV.auctionDeployBlock === 0n) {
+	if (ENV.auctionDeployBlock === 0n) {
 		problems.push(
 			"NEXT_PUBLIC_AUCTION_DEPLOY_BLOCK is required with NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS: winner history cannot be trusted or queried efficiently without its canonical lower bound.",
-		);
-	}
-	if (!ENV.auctionAddress) {
-		console.warn(
-			"[env] NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS is unset; the site will render the pre-launch screen.",
 		);
 	}
 	if (problems.length) {
