@@ -65,7 +65,7 @@ pnpm install
 pnpm dev        # http://localhost:5470/auction?demo=1 for a live in-memory simulation
 ```
 
-Demo mode (`?demo=1`) runs the full bidding experience against an in-memory model that mirrors the Solidity logic bid for bid, so you can explore the UI without a deployed contract or a wallet. The URL param works in dev and on non-mainnet builds; mainnet production builds ignore it (use `NEXT_PUBLIC_AUCTION_DEMO=1` for a dedicated demo deployment).
+Demo mode (`?demo=1`) runs the full bidding experience against an in-memory model that mirrors the Solidity logic bid for bid, so you can explore the UI without a deployed contract or a wallet. The URL param works in dev and on non-mainnet builds; mainnet production builds ignore it. A production-platform build fails outright if `NEXT_PUBLIC_AUCTION_DEMO=1` is set, so a dedicated demo deployment must live on a preview (non-production) environment.
 
 ## Contract design notes
 

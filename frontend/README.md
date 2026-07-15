@@ -15,7 +15,7 @@ pnpm install
 pnpm dev        # port 5470
 ```
 
-Open [http://localhost:5470/auction?demo=1](http://localhost:5470/auction?demo=1) to run without a deployed contract. The `?demo=1` URL param works in dev and on non-mainnet builds only; mainnet production builds ignore it, so a shared link can never show the simulation as the real auction (set `NEXT_PUBLIC_AUCTION_DEMO=1` for a dedicated demo deployment). Demo mode (`src/lib/demoStore.ts`) mirrors the Solidity logic exactly: ceiling basis-point math, the 24h extension cap, in-window sub-threshold raise rejection, id tie-breaks, and time-gated emergency refunds. Unit tests assert this parity against shared fixtures.
+Open [http://localhost:5470/auction?demo=1](http://localhost:5470/auction?demo=1) to run without a deployed contract. The `?demo=1` URL param works in dev and on non-mainnet builds only; mainnet production builds ignore it, so a shared link can never show the simulation as the real auction. A production-platform build fails outright if `NEXT_PUBLIC_AUCTION_DEMO=1` is set; run dedicated demo deployments on a preview (non-production) environment. Demo mode (`src/lib/demoStore.ts`) mirrors the Solidity logic exactly: ceiling basis-point math, the 24h extension cap, in-window sub-threshold raise rejection, id tie-breaks, and time-gated emergency refunds. Unit tests assert this parity against shared fixtures.
 
 Against a real chain, copy `.env.example` to `.env` and fill in the values. `src/lib/env.ts` validates the configuration at build time; a production mainnet build (`VERCEL_ENV=production` or `PANORAMA_PRODUCTION=1`) fails without an authenticated `NEXT_PUBLIC_RPC_URL` and a WalletConnect project id, by design.
 
