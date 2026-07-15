@@ -1,5 +1,7 @@
 // Centralized constants — single source of truth for URLs and config
 
+import { ENV } from "./env";
+
 export const CDN_BASE_URL =
 	process.env.NEXT_PUBLIC_CDN_BASE_URL ||
 	"https://cdn.panorama.garden";
@@ -8,9 +10,11 @@ export const METADATA_INDEX_URL = `${CDN_BASE_URL}/metadata.json`;
 
 export const CHANGELOG_INDEX_URL = `${CDN_BASE_URL}/changelog.json`;
 
+// Validated against the configured chain in env.ts; the default follows the chain too, so
+// a sepolia build never links bidders to mainnet Etherscan pages that cannot show their txs.
 export const BLOCK_EXPLORER_URL =
-	process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL ||
-	"https://etherscan.io";
+	ENV.blockExplorerUrl ||
+	(ENV.chainId === 11155111 ? "https://sepolia.etherscan.io" : "https://etherscan.io");
 
 export const PANORAMA_ERC20_ADDRESS = (process.env
 	.NEXT_PUBLIC_PANORAMA_ERC20_ADDRESS || "") as `0x${string}`;

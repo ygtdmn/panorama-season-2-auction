@@ -34,6 +34,23 @@ jobs:
           NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS: "0x1111111111111111111111111111111111111111"
           NEXT_PUBLIC_PANORAMA_NFT_ADDRESS: "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff"
           NEXT_PUBLIC_AUCTION_DEPLOY_BLOCK: "1"
+      # Everything else in this env is valid, so the only acceptable failure cause is the
+      # demo flag itself: a production host must never ship the simulated auction.
+      - name: demo flag must fail a production build
+        run: |
+          if pnpm build; then
+            echo "expected the production build to fail when NEXT_PUBLIC_AUCTION_DEMO=1" >&2
+            exit 1
+          fi
+        env:
+          PANORAMA_PRODUCTION: "1"
+          NEXT_PUBLIC_CHAIN_ID: "1"
+          NEXT_PUBLIC_AUCTION_DEMO: "1"
+          NEXT_PUBLIC_RPC_URL: https://rpc.example.invalid
+          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ci-project
+          NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS: "0x1111111111111111111111111111111111111111"
+          NEXT_PUBLIC_PANORAMA_NFT_ADDRESS: "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff"
+          NEXT_PUBLIC_AUCTION_DEPLOY_BLOCK: "1"
       - name: production dependency audit
         run: pnpm audit --prod
 
