@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test"
+    "ci": "pnpm lint && pnpm typecheck && pnpm test",
+    "audit:prod": "node scripts/audit-prod.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.91.0",

@@ -51,8 +51,10 @@ jobs:
           NEXT_PUBLIC_PANORAMA_AUCTION_ADDRESS: "0x1111111111111111111111111111111111111111"
           NEXT_PUBLIC_PANORAMA_NFT_ADDRESS: "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff"
           NEXT_PUBLIC_AUCTION_DEPLOY_BLOCK: "1"
+      # `pnpm audit` still calls npm's retired quick-audit endpoint (410); the script asks
+      # the replacement bulk advisory endpoint about the exact installed prod closure.
       - name: production dependency audit
-        run: pnpm audit --prod
+        run: pnpm run audit:prod
 
   contracts:
     name: forge tests (auction)
