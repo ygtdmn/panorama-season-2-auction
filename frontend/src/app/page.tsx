@@ -20,6 +20,7 @@ import {
 import { describeAuctionError } from "@/lib/auctionErrors";
 import type { WriteName } from "@/app/auction/hooks/useAuctionActions";
 import { useAuctionSession } from "@/app/auction/hooks/useAuctionSession";
+import { applyRailMax, readRailMaxAttribute } from "@/lib/railMax";
 import { HeroPanorama } from "@/app/auction/components/HeroPanorama";
 import { DemoBar } from "@/app/auction/components/DemoBar";
 import { Standings } from "@/app/auction/components/Standings";
@@ -112,9 +113,6 @@ function Countdown({
     </span>
   );
 }
-
-// Persisted UI preference: the rail's full-width mode survives reloads.
-const RAIL_MAX_STORAGE_KEY = "panorama-auction:rail-max";
 
 // Scheduled Season 2 auction open, before any contract exists to read a startTime from.
 const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
@@ -231,26 +229,16 @@ export default function AuctionPage() {
   const [railOpen, setRailOpen] = useState(true);
   // Desktop-only focus mode: the rail takes the full width and the details pane hides.
   // Mutually exclusive with the collapsed strip; collapsing always exits it. Persisted
-  // across reloads (the collapsed strip deliberately is not).
+  // across reloads (the collapsed strip deliberately is not). The LAYOUT is driven by the
+  // html[data-rail-max] attribute + CSS, stamped before first paint so a persisted
+  // preference never jumps in after hydration; this state only mirrors it for labels.
   const [railMax, setRailMax] = useState(false);
-  // Restore after mount: SSR renders the default, so reading storage in the initializer
-  // would mismatch hydration.
   useEffect(() => {
-    try {
-      if (window.localStorage.getItem(RAIL_MAX_STORAGE_KEY) === "1") {
-        setRailMax(true);
-      }
-    } catch {
-      // Storage may be unavailable in hardened/private contexts; the preference resets.
-    }
+    setRailMax(readRailMaxAttribute());
   }, []);
   const updateRailMax = (next: boolean) => {
     setRailMax(next);
-    try {
-      window.localStorage.setItem(RAIL_MAX_STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      // See storage note above.
-    }
+    applyRailMax(next);
   };
   // The last submitted tx survives reset() so the explorer link stays after confirmation.
   const [lastTx, setLastTx] = useState<`0x${string}`>();
@@ -472,7 +460,14 @@ export default function AuctionPage() {
             }
             className="hidden lg:inline-flex items-center justify-center w-8 h-8 text-faint hover:text-foreground transition-colors cursor-pointer shrink-0"
           >
-            {railMax ? <LuMinimize2 size={14} /> : <LuMaximize2 size={14} />}
+            {/* Both icons render; CSS keyed on html[data-rail-max] shows the right one,
+                so a persisted preference never swaps icons after hydration. */}
+            <span className="rail-icon-max inline-flex">
+              <LuMaximize2 size={14} />
+            </span>
+            <span className="rail-icon-restore inline-flex">
+              <LuMinimize2 size={14} />
+            </span>
           </button>
           <button
             type="button"
@@ -898,11 +893,9 @@ export default function AuctionPage() {
       <div className="flex flex-col lg:flex-row mx-auto w-full 4xl:max-w-[2400px] min-[3440px]:max-w-[2720px]">
         {/* Bidding: mobile FIRST, desktop LEFT and sticky so it stays usable while reading. */}
         <aside
-          className={`lg:shrink-0 border-b lg:border-b-0 ${railMax ? "" : "lg:border-r"} border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
+          className={`rail-aside lg:shrink-0 border-b lg:border-b-0 lg:border-r border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
             railOpen
-              ? railMax
-                ? "lg:w-full"
-                : "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[760px] 4xl:w-[1000px] min-[3440px]:w-[1240px]"
+              ? "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[760px] 4xl:w-[1000px] min-[3440px]:w-[1240px]"
               : "lg:w-[46px]"
           }`}
           style={{ transitionTimingFunction: "var(--ease-out)" }}
@@ -928,18 +921,18 @@ export default function AuctionPage() {
           )}
 
           {/* Full content: always on mobile, on desktop only when open. In full-width mode
-              the content stays centered at a readable width instead of stretching. */}
+              (CSS, keyed on html[data-rail-max]) the content stays centered at a readable
+              width instead of stretching. */}
           <div
-            className={`${railOpen ? "" : "lg:hidden"} flex flex-col gap-6 p-5 md:p-6 animate-modal-in ${
-              railMax ? "lg:mx-auto lg:w-full lg:max-w-[960px] 3xl:max-w-[1240px]" : ""
-            }`}
+            className={`rail-content ${railOpen ? "" : "lg:hidden"} flex flex-col gap-6 p-5 md:p-6 animate-modal-in`}
           >
             {railBody}
           </div>
         </aside>
 
-        {/* Details — the deeper read: the work, the sale, how it works, and the FAQ. */}
-        <main className={`lg:flex-1 lg:min-w-0 ${railMax ? "lg:hidden" : ""}`}>
+        {/* Details — the deeper read: the work, the sale, how it works, and the FAQ.
+            Hidden by CSS while the rail is maximized. */}
+        <main className="rail-details lg:flex-1 lg:min-w-0">
           <AuctionIntro
             durationHours={durationHours}
             incrementPct={s.minIncrementBps ? s.minIncrementBps / 100 : 5}

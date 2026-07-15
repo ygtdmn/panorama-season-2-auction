@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { themeInitScript } from "./components/ThemeProvider";
+import { themeInitScript } from "@/lib/themeScript";
+import { railMaxInitScript } from "@/lib/railMax";
 import { AUCTION_SITE_URL, OG_IMAGE_URL } from "@/lib/constants";
 
 // Mono for the small technical labels; Hanken Grotesk as the clean sans/serif base.
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 	return (
 		<html lang="en" className={`${jetbrainsMono.variable} ${hanken.variable} h-full`} suppressHydrationWarning>
 			<body className="antialiased h-full font-sans bg-background text-foreground">
-				<script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+				<script dangerouslySetInnerHTML={{ __html: themeInitScript + railMaxInitScript }} />
 				<Providers>{children}</Providers>
 			</body>
 		</html>

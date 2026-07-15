@@ -416,3 +416,33 @@ body.is-scrubbing .app-tooltip { display: none; }
 .terminal-range:disabled::-moz-range-thumb {
 	background: var(--muted);
 }
+
+/* Full-width bidding rail. html[data-rail-max="1"] is stamped by an inline script BEFORE
+   first paint (see railMaxInitScript), so a persisted preference renders maximized from the
+   very first frame instead of jumping after hydration. Desktop only, like the toggle. */
+@media (min-width: 64rem) {
+	html[data-rail-max="1"] .rail-aside {
+		width: 100%;
+		border-right-width: 0;
+	}
+	html[data-rail-max="1"] .rail-details {
+		display: none;
+	}
+	html[data-rail-max="1"] .rail-content {
+		margin-inline: auto;
+		width: 100%;
+		max-width: 60rem; /* mirrors lg:max-w-[960px] */
+	}
+}
+@media (min-width: 120rem) {
+	html[data-rail-max="1"] .rail-content {
+		max-width: 77.5rem; /* mirrors 3xl:max-w-[1240px] */
+	}
+}
+/* The toggle shows the matching icon with no post-hydration swap. */
+html[data-rail-max="1"] .rail-icon-max {
+	display: none;
+}
+html:not([data-rail-max="1"]) .rail-icon-restore {
+	display: none;
+}

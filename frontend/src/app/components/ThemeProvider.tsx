@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "panorama-auction-theme";
+import { THEME_STORAGE_KEY as STORAGE_KEY } from "@/lib/themeScript";
 
 type ThemeContextValue = {
 	theme: Theme;
@@ -79,6 +79,5 @@ export function useTheme() {
 	return useContext(ThemeContext);
 }
 
-// Runs before hydration to set the .dark class and avoid a flash. Honors a stored
-// preference, otherwise the device's prefers-color-scheme.
-export const themeInitScript = `(function(){try{var k="${STORAGE_KEY}";var v=localStorage.getItem(k);var t=(v==="light"||v==="dark")?v:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.classList.toggle("dark",t==="dark");}catch(e){document.documentElement.classList.add("dark");}})();`;
+// The pre-paint theme bootstrap lives in @/lib/themeScript (server-safe; layout.tsx must
+// not import it from this "use client" module).
