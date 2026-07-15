@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { LuArrowDown, LuChevronsLeft, LuChevronsRight } from "react-icons/lu";
+import {
+  LuArrowDown,
+  LuChevronsLeft,
+  LuChevronsRight,
+  LuMaximize2,
+  LuMinimize2,
+} from "react-icons/lu";
 import Header from "@/app/components/Header";
 import { WalletPill } from "@/app/components/WalletPill";
 import { useToast } from "@/app/components/Toast";
@@ -220,6 +226,9 @@ export default function AuctionPage() {
   const [bidInput, setBidInput] = useState("");
   const [raiseInputs, setRaiseInputs] = useState<Record<number, string>>({});
   const [railOpen, setRailOpen] = useState(true);
+  // Desktop-only focus mode: the rail takes the full width and the details pane hides.
+  // Mutually exclusive with the collapsed strip; collapsing always exits it.
+  const [railMax, setRailMax] = useState(false);
   // The last submitted tx survives reset() so the explorer link stays after confirmation.
   const [lastTx, setLastTx] = useState<`0x${string}`>();
 
@@ -431,7 +440,23 @@ export default function AuctionPage() {
           {!demo && <WalletPill />}
           <button
             type="button"
-            onClick={() => setRailOpen(false)}
+            onClick={() => setRailMax((v) => !v)}
+            title={railMax ? "Exit full width" : "Full width"}
+            aria-label={
+              railMax
+                ? "Exit full-width bids panel"
+                : "Expand bids panel to full width"
+            }
+            className="hidden lg:inline-flex items-center justify-center w-8 h-8 text-faint hover:text-foreground transition-colors cursor-pointer shrink-0"
+          >
+            {railMax ? <LuMinimize2 size={14} /> : <LuMaximize2 size={14} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRailMax(false);
+              setRailOpen(false);
+            }}
             title="Collapse"
             aria-label="Collapse bids panel"
             className="hidden lg:inline-flex items-center justify-center w-8 h-8 text-faint hover:text-foreground transition-colors cursor-pointer shrink-0"
@@ -850,9 +875,11 @@ export default function AuctionPage() {
       <div className="flex flex-col lg:flex-row mx-auto w-full 4xl:max-w-[2400px] min-[3440px]:max-w-[2720px]">
         {/* Bidding: mobile FIRST, desktop LEFT and sticky so it stays usable while reading. */}
         <aside
-          className={`lg:shrink-0 border-b lg:border-b-0 lg:border-r border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
+          className={`lg:shrink-0 border-b lg:border-b-0 ${railMax ? "" : "lg:border-r"} border-line lg:sticky lg:self-start lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto overlay-scroll-content transition-[width] duration-300 ${
             railOpen
-              ? "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[760px] 4xl:w-[1000px] min-[3440px]:w-[1240px]"
+              ? railMax
+                ? "lg:w-full"
+                : "lg:w-[420px] xl:w-[500px] 2xl:w-[560px] 3xl:w-[760px] 4xl:w-[1000px] min-[3440px]:w-[1240px]"
               : "lg:w-[46px]"
           }`}
           style={{ transitionTimingFunction: "var(--ease-out)" }}
@@ -877,16 +904,19 @@ export default function AuctionPage() {
             </button>
           )}
 
-          {/* Full content: always on mobile, on desktop only when open */}
+          {/* Full content: always on mobile, on desktop only when open. In full-width mode
+              the content stays centered at a readable width instead of stretching. */}
           <div
-            className={`${railOpen ? "" : "lg:hidden"} flex flex-col gap-6 p-5 md:p-6 animate-modal-in`}
+            className={`${railOpen ? "" : "lg:hidden"} flex flex-col gap-6 p-5 md:p-6 animate-modal-in ${
+              railMax ? "lg:mx-auto lg:w-full lg:max-w-[960px] 3xl:max-w-[1240px]" : ""
+            }`}
           >
             {railBody}
           </div>
         </aside>
 
         {/* Details — the deeper read: the work, the sale, how it works, and the FAQ. */}
-        <main className="lg:flex-1 lg:min-w-0">
+        <main className={`lg:flex-1 lg:min-w-0 ${railMax ? "lg:hidden" : ""}`}>
           <AuctionIntro
             durationHours={durationHours}
             incrementPct={s.minIncrementBps ? s.minIncrementBps / 100 : 5}
