@@ -474,6 +474,11 @@ contract PanoramaSeason2Auction is Ownable, ReentrancyGuardTransient {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Cancel the auction before settlement begins. Enables `refundAll`. Blocks `finalize`.
+    /// @dev    Deliberately not `nonReentrant`, unlike the sibling recovery functions: those push
+    ///         ETH refunds, while no external call is reachable from here. Cancelling requires
+    ///         `Phase.Active`, where `unreleasedProceeds` is always zero (proceeds only accrue
+    ///         during `finalize`), so the `_completeRecovery -> _releaseProceeds` tail returns
+    ///         before any transfer; and every state effect lands before that call regardless.
     function cancelAuction() external onlyOwner {
         if (phase != Phase.Active) revert NotCancellable();
         phase = Phase.Cancelled;
