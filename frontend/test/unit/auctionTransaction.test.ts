@@ -86,4 +86,18 @@ describe("auction transaction tracking", () => {
 	it("rejects malformed persisted data", () => {
 		expect(hydratePersistedTransaction({ version: 1, originalHash: "0x1" })).toBeNull();
 	});
+
+	it("restores only into the session of the wallet that submitted it", () => {
+		const persisted = persistableTransaction(submitted());
+		const otherWallet = "0x2222222222222222222222222222222222222222" as const;
+		expect(hydratePersistedTransaction(persisted, otherWallet)).toBeNull();
+		expect(hydratePersistedTransaction(persisted, account)?.status).toBe("unknown");
+		// Address casing must not defeat the guard.
+		expect(
+			hydratePersistedTransaction(
+				persisted,
+				account.toUpperCase().replace("0X", "0x") as `0x${string}`,
+			)?.status,
+		).toBe("unknown");
+	});
 });

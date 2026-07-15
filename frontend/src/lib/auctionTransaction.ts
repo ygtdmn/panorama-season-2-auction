@@ -149,6 +149,7 @@ export function persistableTransaction<Action extends string>(
 
 export function hydratePersistedTransaction<Action extends string>(
 	value: unknown,
+	expectedAccount?: `0x${string}`,
 ): TransactionTracker<Action> | null {
 	if (!value || typeof value !== "object") return null;
 	const p = value as Partial<PersistedTransaction<Action>>;
@@ -163,6 +164,12 @@ export function hydratePersistedTransaction<Action extends string>(
 		!/^0x[0-9a-fA-F]{64}$/.test(p.currentHash) ||
 		typeof p.submittedAt !== "number"
 	) {
+		return null;
+	}
+	// A pending record only ever restores into the session of the wallet that submitted it.
+	// Another account restoring it would be locked by a transaction it cannot resolve, and
+	// its success/error surfaces would fire on the wrong session.
+	if (expectedAccount && p.account.toLowerCase() !== expectedAccount.toLowerCase()) {
 		return null;
 	}
 	return {

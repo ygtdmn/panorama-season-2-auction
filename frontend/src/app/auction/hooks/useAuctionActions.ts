@@ -66,7 +66,12 @@ export interface AuctionActions {
 const RECEIPT_UNKNOWN_AFTER_MS = 60_000;
 const RECEIPT_WAIT_SLICE_MS = 30_000;
 const RECEIPT_RETRY_DELAY_MS = 3_000;
-const PENDING_STORAGE_KEY = `panorama-auction:pending:${TARGET_CHAIN.id}:${PANORAMA_AUCTION_ADDRESS.toLowerCase()}`;
+// Pending records are scoped per wallet: wallet B must never be locked by (or toast for)
+// wallet A's unresolved transaction. The unscoped prefix is also the pre-scoping legacy key.
+const PENDING_STORAGE_PREFIX = `panorama-auction:pending:${TARGET_CHAIN.id}:${PANORAMA_AUCTION_ADDRESS.toLowerCase()}`;
+function pendingStorageKey(account: `0x${string}`): string {
+	return `${PENDING_STORAGE_PREFIX}:${account.toLowerCase()}`;
+}
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,41 +102,60 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 	// React state updates after an event returns. This imperative lock closes the tiny double-click
 	// window before the `signing` render lands; reducer state remains the durable source of truth.
 	const writeLockRef = useRef(false);
-	const [trackerReady, setTrackerReady] = useState(false);
+	// The wallet the in-memory tracker was hydrated for ("disconnected" when none). Until it
+	// matches the connected wallet, writes stay locked: this closes the one-render window
+	// after an account switch where the previous wallet's tracker is still in memory.
+	const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 	const notifiedHashRef = useRef<Hash | undefined>(undefined);
 
 	const wrongChain = chainId !== TARGET_CHAIN.id;
+	const trackerReady = hydratedFor === (address ?? "disconnected");
 	const unresolved = !trackerReady || isTransactionUnresolved(tracker.status);
 
-	// Restore an unresolved transaction before enabling any write. A reload must not create a
-	// duplicate bid merely because React forgot the receipt query.
+	// Restore the CONNECTED wallet's unresolved transaction before enabling any write. A reload
+	// must not create a duplicate bid merely because React forgot the receipt query, and another
+	// wallet's record must neither lock this session nor fire its completion surfaces here.
 	useEffect(() => {
-		try {
-			const raw = window.localStorage.getItem(PENDING_STORAGE_KEY);
-			if (raw) {
-				const restored = hydratePersistedTransaction<WriteName>(JSON.parse(raw));
-				if (restored) dispatch({ type: "hydrate", tracker: restored });
-				else window.localStorage.removeItem(PENDING_STORAGE_KEY);
+		let restored: ReturnType<typeof hydratePersistedTransaction<WriteName>> = null;
+		if (address) {
+			try {
+				// Drop any pre-account-scoping record: it cannot prove which wallet it belongs to.
+				window.localStorage.removeItem(PENDING_STORAGE_PREFIX);
+				const key = pendingStorageKey(address);
+				const raw = window.localStorage.getItem(key);
+				if (raw) {
+					restored = hydratePersistedTransaction<WriteName>(JSON.parse(raw), address);
+					if (!restored) window.localStorage.removeItem(key);
+				}
+			} catch {
+				// Storage may be unavailable in hardened/private contexts. In-memory tracking still works.
 			}
-		} catch {
-			// Storage may be unavailable in hardened/private contexts. In-memory tracking still works.
 		}
-		setTrackerReady(true);
-	}, []);
+		dispatch({
+			type: "hydrate",
+			tracker: restored ?? emptyTransactionTracker<WriteName>(),
+		});
+		setHydratedFor(address ?? "disconnected");
+	}, [address]);
 
 	useEffect(() => {
 		if (!trackerReady) return;
+		// Persist only under the owning wallet's key. An empty tracker carries no account and
+		// therefore never deletes another wallet's still-pending record.
+		const account = tracker.account;
+		if (!account || !address || account.toLowerCase() !== address.toLowerCase()) return;
 		try {
+			const key = pendingStorageKey(account);
 			const persisted = persistableTransaction(tracker);
 			if (persisted) {
-				window.localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(persisted));
+				window.localStorage.setItem(key, JSON.stringify(persisted));
 			} else {
-				window.localStorage.removeItem(PENDING_STORAGE_KEY);
+				window.localStorage.removeItem(key);
 			}
 		} catch {
 			// See storage note above.
 		}
-	}, [tracker, trackerReady]);
+	}, [tracker, trackerReady, address]);
 
 	useEffect(() => {
 		writeLockRef.current = isTransactionUnresolved(tracker.status);
