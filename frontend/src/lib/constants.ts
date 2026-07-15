@@ -30,6 +30,10 @@ export const AUCTION_SITE_URL = "https://season2.panorama.garden";
 export const GITHUB_URL =
 	process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/ygtdmn/panorama";
 
+// The published security review (public edition), linked from the FAQ and footer.
+export const AUDIT_REPORT_URL =
+	"https://github.com/ygtdmn/panorama-season-2-auction/blob/main/Audit.pdf";
+
 /** evm.now shows a contract's verified/decompiled source by address. */
 export function getEvmNowUrl(address: string): string {
 	return `https://evm.now/${address}`;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+	AUDIT_REPORT_URL,
 	getEvmNowUrl,
 	GITHUB_URL,
 	OPENSEA_COLLECTION_URL,
@@ -152,6 +153,16 @@ export function AuctionIntro({
 			),
 		},
 		{
+			q: "Has the auction been audited?",
+			a: (
+				<>
+					Yes. An independent security review in July 2026 covered the contract, the
+					settlement process, and this site. It found no path for an outside attacker to
+					take escrowed ETH. <Ext href={AUDIT_REPORT_URL}>Read the full report</Ext>.
+				</>
+			),
+		},
+		{
 			q: "What is $PANO?",
 			a: (
 				<>
@@ -259,6 +270,9 @@ export function AuctionIntro({
 							<span className="font-mono text-micro uppercase tracking-[0.16em]">Contract code ↗</span>
 						</Ext>
 					)}
+					<Ext href={AUDIT_REPORT_URL}>
+						<span className="font-mono text-micro uppercase tracking-[0.16em]">Audit ↗</span>
+					</Ext>
 					<span className="font-mono text-micro uppercase tracking-[0.14em] text-faint ml-auto">
 						<Yigit /> × <Delta />
 					</span>
