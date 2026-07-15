@@ -22,7 +22,13 @@ export const PANORAMA_ERC20_ADDRESS = (process.env
 export const OPENSEA_COLLECTION_SLUG = "panorama-by-ygtdmn";
 export const OPENSEA_COLLECTION_URL = `https://opensea.io/collection/${OPENSEA_COLLECTION_SLUG}`;
 
+// The main Panorama site (links out to the canvas, terminal, about pages).
 export const SITE_URL = "https://panorama.garden";
+
+// This app's own public origin. Used wherever the site identifies itself: WalletConnect
+// metadata, Open Graph canonical URLs. Must match the deployed host, or wallets show a
+// mismatched origin during connection prompts.
+export const AUCTION_SITE_URL = "https://season2.panorama.garden";
 
 // Public source + on-chain code links, so anyone can read the contract before bidding.
 export const GITHUB_URL =

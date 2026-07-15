@@ -3,7 +3,7 @@ import { JetBrains_Mono, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { themeInitScript } from "./components/ThemeProvider";
-import { OG_IMAGE_URL, SITE_URL } from "@/lib/constants";
+import { AUCTION_SITE_URL, OG_IMAGE_URL } from "@/lib/constants";
 
 // Mono for the small technical labels; Hanken Grotesk as the clean sans/serif base.
 const jetbrainsMono = JetBrains_Mono({
@@ -23,7 +23,7 @@ const description =
 	"Bid on Season 2 of Panorama, an autonomous generative painting. A collaboration between Yigit Duman and DeltaSauce.";
 
 export const metadata: Metadata = {
-	metadataBase: new URL(SITE_URL),
+	metadataBase: new URL(AUCTION_SITE_URL),
 	title: "Panorama: Season 2",
 	description,
 	icons: {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 		title: "Panorama: Season 2",
 		description,
 		type: "website",
-		url: SITE_URL,
+		url: AUCTION_SITE_URL,
 		siteName: "Panorama",
 		locale: "en_US",
 		images: [{ url: OG_IMAGE_URL, width: 1920, height: 1080, alt: "Panorama", type: "image/jpeg" }],

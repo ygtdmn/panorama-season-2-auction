@@ -3,6 +3,7 @@ import { createConfig, fallback, http } from "wagmi";
 import { injected, walletConnect } from "wagmi/connectors";
 import type { Chain } from "viem";
 import { ENV } from "./env";
+import { AUCTION_SITE_URL, CDN_BASE_URL } from "./constants";
 
 // Which chain the app targets at runtime. Defaults to mainnet; set
 // NEXT_PUBLIC_CHAIN_ID=11155111 for Sepolia or 31337 for a local anvil node
@@ -55,11 +56,14 @@ export const config = createConfig({
 			? [
 					walletConnect({
 						projectId: WC_PROJECT_ID,
+						// The metadata url must be this app's real origin: wallets display it during
+						// connection prompts, and a mismatched origin reads as a phishing signal.
 						metadata: {
-							name: "Panorama",
-							description: "An autonomous generative panorama driven by real-time price data.",
-							url: "https://panorama.garden",
-							icons: ["https://cdn.panorama.garden/prereveal.webp"],
+							name: "Panorama Season 2 Auction",
+							description:
+								"Bid on Season 2 of Panorama, an autonomous generative painting.",
+							url: AUCTION_SITE_URL,
+							icons: [`${CDN_BASE_URL}/prereveal.webp`],
 						},
 						showQrModal: true,
 					}),
