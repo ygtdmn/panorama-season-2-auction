@@ -6,10 +6,6 @@ export const CDN_BASE_URL =
 	process.env.NEXT_PUBLIC_CDN_BASE_URL ||
 	"https://cdn.panorama.garden";
 
-export const METADATA_INDEX_URL = `${CDN_BASE_URL}/metadata.json`;
-
-export const CHANGELOG_INDEX_URL = `${CDN_BASE_URL}/changelog.json`;
-
 // Validated against the configured chain in env.ts; the default follows the chain too, so
 // a sepolia build never links bidders to mainnet Etherscan pages that cannot show their txs.
 export const BLOCK_EXPLORER_URL =
