@@ -21,8 +21,7 @@ script/
   DeployAuction.s.sol          Validated deploy (config bounds, live NFT state checks)
   SettleAuctionAtomic.s.sol    authorize -> exact cap -> finalize batches -> revoke,
                                as one EOA run or one Safe Transaction Builder batch
-  AuthorizeAuction.s.sol       Legacy split path, step 1 (only callable after endTime)
-  FinalizeAuction.s.sol        Legacy split path, step 2
+  DeployAuctionSepolia.s.sol   Sepolia rehearsal deploy (same validation, testnet chain gate)
   CancelAuction.s.sol          Owner cancel while Active
   RefundAllAuction.s.sol       Permissionless batched refunds after cancel
 scripts/

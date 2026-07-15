@@ -67,7 +67,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: FOUNDRY_PROFILE=ci forge test --match-path 'test/PanoramaSeason2Auction*' -vv
       - run: forge build --sizes src/PanoramaSeason2Auction.sol
-      - run: forge fmt --check src/PanoramaSeason2Auction.sol test/PanoramaSeason2Auction.t.sol test/PanoramaSeason2Auction.invariants.t.sol test/PanoramaSeason2AuctionAtomicSettlement.t.sol script/DeployAuction.s.sol script/AuthorizeAuction.s.sol script/SettleAuctionAtomic.s.sol script/FinalizeAuction.s.sol script/CancelAuction.s.sol script/RefundAllAuction.s.sol
+      - run: forge fmt --check src/PanoramaSeason2Auction.sol test/PanoramaSeason2Auction.t.sol test/PanoramaSeason2Auction.invariants.t.sol test/PanoramaSeason2AuctionAtomicSettlement.t.sol script/DeployAuction.s.sol script/DeployAuctionSepolia.s.sol script/SettleAuctionAtomic.s.sol script/CancelAuction.s.sol script/RefundAllAuction.s.sol
       - name: validate operations scripts
         run: |
           bash -n scripts/*.sh

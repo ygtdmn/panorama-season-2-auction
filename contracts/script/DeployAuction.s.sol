@@ -64,8 +64,14 @@ contract DeployAuction is BaseScript {
         console2.logBytes32(address(auction).codehash);
     }
 
+    /// @dev Chain gate. Mainnet by default; testnet rehearsal variants override this
+    ///      (see DeployAuctionSepolia) so the production script itself stays mainnet-only.
+    function _requiredChainId() internal pure virtual returns (uint256) {
+        return MAINNET_CHAIN_ID;
+    }
+
     function _loadAndValidateConfig() internal view returns (Config memory config) {
-        require(block.chainid == MAINNET_CHAIN_ID, "WRONG_CHAIN_ID");
+        require(block.chainid == _requiredChainId(), "WRONG_CHAIN_ID");
 
         config.nft = vm.envAddress("PANORAMA_NFT");
         config.payoutA = vm.envAddress("PANORAMA_PAYOUT_A");

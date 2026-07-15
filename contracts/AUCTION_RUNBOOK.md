@@ -13,7 +13,7 @@ refuses to run on any chain but mainnet. Rehearse the full flow on a fork first 
 
 | Key | Controls | Used by |
 |---|---|---|
-| NFT + controller owner | `setAuthorizedOperator`, `setSeasonMintCap` | AuthorizeAuction, SettleAuctionAtomic, FinalizeAuction (revocation) |
+| NFT + controller owner | `setAuthorizedOperator`, `setSeasonMintCap` | SettleAuctionAtomic |
 | Auction owner (deployer) | `finalize` before grace, `cancelAuction`, `setPaused`, `setSchedule`, rescues | DeployAuction, CancelAuction, admin UI |
 | Anyone | `refundAll` (after cancel), `emergencyRefund` (after grace), `recoverFromSupplyMismatch` (on mismatch), `recoverFromMintingUnavailable` (after 7-day grace), `finalize` (after 7-day grace), `withdraw` | /recovery page, Etherscan |
 
@@ -136,9 +136,12 @@ Notes:
   token mid-settlement, and after completion `mintCap == totalMinted` again.
 - Gas: `finalize(45)` ≈ 8.1M; a full 90-winner Safe batch ≈ 16.4M in one transaction.
   Hostile refund receivers can add up to ~100k gas per winner; keep batches ≤ 45.
-- The legacy two-step path (`AuthorizeAuction` then `FinalizeAuction`) remains available
-  and is what the wallet-gated `/admin` page drives; the atomic script supersedes it for
-  production use.
+- The atomic script is the only settle path; the old split scripts (authorize, then
+  finalize later) were removed because a gap between the two steps is exactly the mint
+  window this sequence exists to close. If the script is ever unusable, the wallet-gated
+  `/admin` console (or `/recovery` after the 7-day grace) drives the contract's `finalize`
+  directly; grant `setAuthorizedOperator` + the exact-winner mint cap immediately before,
+  and revoke immediately after, in the same sitting.
 - Post-checks (the script asserts them; verify independently): phase Settled, escrow and
   unreleased proceeds zero, `totalMinted == 90 + winners`, operator revoked, payout
   addresses received the 58/42 split.
