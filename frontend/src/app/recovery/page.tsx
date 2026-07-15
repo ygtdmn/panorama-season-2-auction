@@ -11,6 +11,7 @@ import {
 } from "@/lib/constants";
 import { describeAuctionError } from "@/lib/auctionErrors";
 import { useAuctionSession } from "@/app/auction/hooks/useAuctionSession";
+import { DemoBar } from "@/app/auction/components/DemoBar";
 import {
 	displayPhase,
 	eth,
@@ -74,7 +75,7 @@ function Tool({
 
 export default function RecoveryPage() {
 	const toast = useToast();
-	const { demo, isConnected, state: s, actions } = useAuctionSession();
+	const { demo, isConnected, state: s, actions, controls } = useAuctionSession();
 	const now = useChainNow(s.chainTime);
 	const [lastTx, setLastTx] = useState<`0x${string}`>();
 
@@ -160,6 +161,14 @@ export default function RecoveryPage() {
 					</div>
 					{!demo && <WalletPill />}
 				</div>
+
+				{/* Recovery must never look real while simulated: a demo visitor could otherwise
+					believe they withdrew or recovered actual funds. */}
+				{demo && controls && (
+					<div className="mt-6">
+						<DemoBar controls={controls} />
+					</div>
+				)}
 
 				<h1 className="font-serif font-medium text-2xl md:text-3xl leading-[1.05] tracking-[-0.01em] mt-6">
 					Your ETH does not depend on us.
