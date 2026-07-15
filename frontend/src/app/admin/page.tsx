@@ -170,7 +170,9 @@ export default function AuctionAdminPage() {
 
   return shell(
     <div className="flex flex-col gap-4">
-	  {unsafeSnapshot && (
+	  {/* Locks engage on the first bad snapshot (writeBlocked above); the banner is
+		  debounced so a single failed poll never flashes an alarming surface. */}
+	  {s.degradedPersistent && (
 		<div className="border border-signal/50 px-4 py-3 flex items-center justify-between gap-4" role="alert">
 		  <p className="font-sans text-sm text-muted">
 			Auction reads are stale or degraded. Every owner write is locked until refresh succeeds.

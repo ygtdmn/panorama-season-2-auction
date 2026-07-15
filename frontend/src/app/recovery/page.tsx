@@ -196,7 +196,9 @@ export default function RecoveryPage() {
 						</div>
 					) : (
 						<>
-							{unsafeSnapshot && (
+							{/* Locks engage on the first bad snapshot (writeBlocked above); the banner is
+								debounced so a single failed poll never flashes an alarming surface. */}
+							{s.degradedPersistent && (
 								<div className="mt-10 border border-signal/50 px-4 py-3 flex items-center justify-between gap-4" role="alert">
 									<p className="font-sans text-sm text-muted">
 										Recovery reads are stale or degraded. Writes remain locked until refresh succeeds.
@@ -204,7 +206,7 @@ export default function RecoveryPage() {
 									<button className={GHOST} onClick={() => s.refetch()}>retry</button>
 								</div>
 							)}
-							<div className={unsafeSnapshot ? "mt-4" : "mt-10"}>
+							<div className={s.degradedPersistent ? "mt-4" : "mt-10"}>
 								<TransactionStatus actions={actions} />
 							</div>
 						<ol className="mt-4 flex flex-col">

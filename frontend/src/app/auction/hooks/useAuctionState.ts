@@ -20,6 +20,9 @@ const PHASES: AuctionPhase[] = ["active", "finalizing", "settled", "cancelled"];
 const NEAR_END_WINDOW_S = 15 * 60;
 const NEAR_END_POLL_MS = 3_000;
 const SNAPSHOT_STALE_MS = 45_000;
+/** Write locks engage the moment data is degraded/stale; the banner waits this long, so a
+ *  single failed poll (self-healing within seconds) never flashes an alarming surface. */
+const DEGRADED_BANNER_AFTER_MS = 30_000;
 
 export type WonLogStatus = "not-needed" | "loading" | "ready" | "degraded" | "error";
 
@@ -54,6 +57,9 @@ export interface AuctionState {
 	degraded: boolean;
 	/** No successful full snapshot within the safety window. All writes must stay disabled. */
 	stale: boolean;
+	/** Degraded/stale has persisted past the debounce window: show the data-health banner.
+	 *  Locks key off `degraded`/`stale` directly; this flag only gates the banner. */
+	degradedPersistent: boolean;
 	/** Connected-account reads are part of the action-safety snapshot. */
 	accountReady: boolean;
 	accountReadFailed: boolean;
@@ -234,6 +240,22 @@ export function useAuctionState(pollMs = 12_000): AuctionState {
 		!!address && accountReady && healthNow - account.dataUpdatedAt > SNAPSHOT_STALE_MS;
 	const blockStale = !!chainTime && healthNow - chainTime.atMs > SNAPSHOT_STALE_MS;
 
+	const degraded =
+		enabled && globalReady && (global.isError || (!!address && account.isError));
+	const stale =
+		enabled && globalReady && accountReady && (globalStale || accountStale || blockStale);
+	// Debounce the banner, never the locks: remember when trouble started; the 5s health
+	// tick re-evaluates the elapsed time without extra timers.
+	const unsafe = degraded || stale;
+	const [unsafeSince, setUnsafeSince] = useState<number | null>(null);
+	useEffect(() => {
+		setUnsafeSince((prev) => (unsafe ? (prev ?? Date.now()) : null));
+	}, [unsafe]);
+	const degradedPersistent =
+		unsafe &&
+		unsafeSince !== null &&
+		healthNow - unsafeSince >= DEGRADED_BANNER_AFTER_MS;
+
 	// Re-read on every new block: on-chain state only changes with blocks, so this both caps
 	// staleness at one block and avoids blind trust in the device clock or a fixed interval.
 	const refetchRef = useRef<() => void>(() => {});
@@ -380,15 +402,9 @@ export function useAuctionState(pollMs = 12_000): AuctionState {
 		readFailed:
 			enabled &&
 			((global.isError && !globalReady) || (!!address && account.isError && !accountReady)),
-		degraded:
-			enabled &&
-			globalReady &&
-			(global.isError || (!!address && account.isError)),
-		stale:
-			enabled &&
-			globalReady &&
-			accountReady &&
-			(globalStale || accountStale || blockStale),
+		degraded,
+		stale,
+		degradedPersistent,
 		accountReady,
 		accountReadFailed: !!address && account.isError && !accountReady,
 		refetch: () => refetchRef.current(),

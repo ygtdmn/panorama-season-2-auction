@@ -301,7 +301,10 @@ export default function AuctionPage() {
 		bidWei === null;
 	const bidTooLow = bidWei !== null && bidWei > 0n && bidWei < s.minimumBid;
 	const busy = actions.unresolved;
-	const writeBlocked = busy;
+	// Fail closed like /admin and /recovery: a bid must never ride a stale or degraded
+	// snapshot, where minimumBid, endTime, or phase could all be wrong.
+	const unsafeSnapshot = s.degraded || s.stale;
+	const writeBlocked = busy || unsafeSnapshot;
   const recoveryAvailable = s.phase === "cancelled" && !s.refundsComplete;
   const emergencyAvailable =
     now !== 0 &&
@@ -437,6 +440,21 @@ export default function AuctionPage() {
           </button>
         </div>
       </div>
+
+      {s.degradedPersistent && (
+        <div
+          className="border border-signal/50 px-4 py-3 flex items-center justify-between gap-4"
+          role="alert"
+        >
+          <p className="font-sans text-sm text-muted">
+            Live auction data is stale or degraded. Bidding stays locked until a
+            refresh succeeds.
+          </p>
+          <button className={GHOST} onClick={() => s.refetch()}>
+            retry
+          </button>
+        </div>
+      )}
 
 	  <TransactionStatus actions={actions} />
 

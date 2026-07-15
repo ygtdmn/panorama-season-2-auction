@@ -111,6 +111,7 @@ function deriveState(s: DemoSnapshot): AuctionState {
 		readFailed: false,
 		degraded: false,
 		stale: false,
+		degradedPersistent: false,
 		accountReady: true,
 		accountReadFailed: false,
 		refetch: () => {},
