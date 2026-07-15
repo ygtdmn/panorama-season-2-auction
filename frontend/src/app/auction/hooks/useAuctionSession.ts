@@ -54,13 +54,21 @@ function readUrlDemo(): boolean {
   }
 }
 
-/** Demo is on when NEXT_PUBLIC_AUCTION_DEMO=1 or the URL has ?demo=1. */
+/**
+ * Demo is on when NEXT_PUBLIC_AUCTION_DEMO=1, or when the URL has ?demo=1 in
+ * dev or on a non-mainnet build. Mainnet production builds ignore the URL param:
+ * a shared ?demo=1 link must never swap the real auction for the simulation.
+ */
 export function useIsDemo(): boolean {
   const envDemo = process.env.NEXT_PUBLIC_AUCTION_DEMO === "1";
+  // Unset chain id defaults to mainnet, mirroring src/lib/env.ts.
+  const urlDemoAllowed =
+    process.env.NODE_ENV !== "production" ||
+    (process.env.NEXT_PUBLIC_CHAIN_ID ?? "1") !== "1";
   // useSyncExternalStore reads the client URL without a hydration mismatch:
   // server snapshot is false, client snapshot reflects the real query string.
   const urlDemo = useSyncExternalStore(noopSubscribe, readUrlDemo, () => false);
-  return envDemo || urlDemo;
+  return envDemo || (urlDemoAllowed && urlDemo);
 }
 
 function deriveState(s: DemoSnapshot): AuctionState {
