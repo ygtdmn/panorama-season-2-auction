@@ -113,6 +113,9 @@ function Countdown({
   );
 }
 
+// Persisted UI preference: the rail's full-width mode survives reloads.
+const RAIL_MAX_STORAGE_KEY = "panorama-auction:rail-max";
+
 // Scheduled Season 2 auction open, before any contract exists to read a startTime from.
 const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
 // Scheduled duration (24h) — only used to give the calendar event an end time.
@@ -227,8 +230,28 @@ export default function AuctionPage() {
   const [raiseInputs, setRaiseInputs] = useState<Record<number, string>>({});
   const [railOpen, setRailOpen] = useState(true);
   // Desktop-only focus mode: the rail takes the full width and the details pane hides.
-  // Mutually exclusive with the collapsed strip; collapsing always exits it.
+  // Mutually exclusive with the collapsed strip; collapsing always exits it. Persisted
+  // across reloads (the collapsed strip deliberately is not).
   const [railMax, setRailMax] = useState(false);
+  // Restore after mount: SSR renders the default, so reading storage in the initializer
+  // would mismatch hydration.
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(RAIL_MAX_STORAGE_KEY) === "1") {
+        setRailMax(true);
+      }
+    } catch {
+      // Storage may be unavailable in hardened/private contexts; the preference resets.
+    }
+  }, []);
+  const updateRailMax = (next: boolean) => {
+    setRailMax(next);
+    try {
+      window.localStorage.setItem(RAIL_MAX_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // See storage note above.
+    }
+  };
   // The last submitted tx survives reset() so the explorer link stays after confirmation.
   const [lastTx, setLastTx] = useState<`0x${string}`>();
 
@@ -440,7 +463,7 @@ export default function AuctionPage() {
           {!demo && <WalletPill />}
           <button
             type="button"
-            onClick={() => setRailMax((v) => !v)}
+            onClick={() => updateRailMax(!railMax)}
             title={railMax ? "Exit full width" : "Full width"}
             aria-label={
               railMax
@@ -454,7 +477,7 @@ export default function AuctionPage() {
           <button
             type="button"
             onClick={() => {
-              setRailMax(false);
+              updateRailMax(false);
               setRailOpen(false);
             }}
             title="Collapse"
