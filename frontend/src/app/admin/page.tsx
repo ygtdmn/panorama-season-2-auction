@@ -161,6 +161,9 @@ export default function AuctionAdminPage() {
         <WalletPill connectLabel="connect" />
       </div>,
     );
+  // This owner check is client-side convenience, not the security boundary. The real gate
+  // is on-chain: every privileged function is onlyOwner, so a visitor who bypasses this
+  // render gate gets a console whose every write the contract reverts.
   if (!s.isOwner)
     return shell(
       <p className="font-sans text-sm text-signal">

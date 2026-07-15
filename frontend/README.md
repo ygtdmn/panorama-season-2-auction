@@ -3,7 +3,7 @@
 Standalone Next.js 16 app for the Season 2 auction. Three routes:
 
 - **`/auction`**: public bidding page (`/` redirects here). Live standings, bid form with quick-fills, an intro article with an 11-question FAQ, and post-settlement results reconstructed from `Won` event logs.
-- **`/admin`**: owner console, gated on the connected wallet matching `owner()`. Batched finalize, cancel, refundAll, pause. Noindexed.
+- **`/admin`**: owner console, gated on the connected wallet matching `owner()`. Batched finalize, cancel, refundAll, pause. Noindexed. The wallet check is client-side convenience only; the security boundary is the contract's `onlyOwner` modifiers, which revert any write from a non-owner regardless of what the page renders.
 - **`/recovery`**: public self-serve settlement and refund tools: `withdraw`, permissionless `finalize` after the 7-day grace, cancelled-auction refunds, supply-mismatch recovery, and `emergencyRefund`, each with live availability, a countdown to eligibility, and an Etherscan `#writeContract` fallback.
 
 Stack: React 19, TypeScript, Tailwind CSS 4, wagmi 3 + viem 2, TanStack Query.
