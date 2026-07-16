@@ -26,7 +26,7 @@ hardware wallet and never reuse the key for anything else during the sale window
 1. **Commit and tag.** The deployed source must be a committed tree; record the tag in the
    manifest. `git status` must be clean for `contracts/` and `frontend/`.
 2. **Tests green.** This revision discovers **113 auction tests** (including invariants and
-   atomic-settlement script tests), **40 frontend unit tests**, and **15 browser scenarios**.
+   atomic-settlement script tests), **56 frontend unit tests**, and **15 browser scenarios**.
    The command output is authoritative if those counts change:
    ```bash
    FOUNDRY_PROFILE=ci forge test --match-path 'test/PanoramaSeason2Auction*' -vv
