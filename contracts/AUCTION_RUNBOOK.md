@@ -35,8 +35,12 @@ hardware wallet and never reuse the key for anything else during the sale window
    pnpm run ci
    pnpm run build
    pnpm run test:e2e
-   pnpm audit --prod
+   pnpm run audit:prod
    ```
+   (`pnpm audit --prod` no longer works: npm retired the quick-audit endpoint it calls, HTTP
+   410 since mid-2026. `audit:prod` runs `scripts/audit-prod.mjs`, which audits the exact
+   installed production closure against npm's replacement bulk advisory endpoint — the same
+   step CI runs.)
 3. **RPC capacity.** Verify the Alchemy (or equivalent) account is not rate-capped and has
    headroom for auction-week traffic. The frontend needs `NEXT_PUBLIC_RPC_URL` set to an
    authenticated endpoint; the deploy scripts need `foundry.toml`'s `mainnet` RPC working.
