@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-07-16T14:15:45Z",
+  "chainId": 1,
+  "block": 25545763,
+  "gitCommit": "e4aa39165051da271b670964348ae47b738be2f9",
+  "gitDirty": true,
+  "auction": {
+    "address": "0x902237C2B0A4B428eefEd862019D5FF0a6E509fd",
+    "runtimeCodehash": "0x9c6a9b7aa81314c29cbe93f0d8c3f841c4db09d6b7e15dae8f260c0f14a59cfe",
+    "owner": "0x28996f7DECe7E058EBfC56dFa9371825fBfa515A",
+    "nft": "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff",
+    "payoutA": "0x077be47506ABa13F54b20850fd47d1Cea69d84A5",
+    "payoutB": "0x5fC13C5A541041f8fa12fab492D064435eB8d2F5",
+    "reservePriceWei": "100000000000000000",
+    "minIncrementBps": 500,
+    "startTime": 1784739600,
+    "endTime": 1784826000,
+    "absoluteEndTime": 1784912400,
+    "phase": 0,
+    "paused": false,
+    "firstTokenId": 91,
+    "maxUnits": 90
+  },
+  "nft": {
+    "address": "0x435BD9CF72C278c9bAD9655732a6724469c6D9Ff",
+    "owner": "0x28996f7DECe7E058EBfC56dFa9371825fBfa515A",
+    "totalMinted": 90,
+    "mintCap": 90,
+    "auctionAuthorized": false
+  },
+  "mintController": {
+    "address": "0x9f76C13820098E01d85A3273387c21623B77e7Aa",
+    "owner": "0x28996f7DECe7E058EBfC56dFa9371825fBfa515A",
+    "seasonCount": 1,
+    "season1Cap": 90,
+    "season2Cap": 0
+  }
+}

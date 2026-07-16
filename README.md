@@ -4,6 +4,12 @@ The smart contract, tests, operations tooling, and web frontend for the [Panoram
 
 Panorama is an autonomous generative art system that paints one segment of a continuously expanding panorama every day, driven by on-chain price data. Season 2 covers days 91 through 180. This repository sells those 90 tokens in a single auction.
 
+## Mainnet deployment
+
+`PanoramaSeason2Auction` is live and source-verified at [`0x902237C2B0A4B428eefEd862019D5FF0a6E509fd`](https://etherscan.io/address/0x902237C2B0A4B428eefEd862019D5FF0a6E509fd). Bidding opens 2026-07-22 17:00 UTC and runs 24 hours, with at most 24 further hours of anti-snipe extension. Reserve 0.1 ETH, minimum increment 5%.
+
+The deployment manifest, recording every immutable, the runtime codehash, and the NFT and mint controller state at deploy time, is committed at [contracts/deployments/auction-20260716.json](contracts/deployments/auction-20260716.json). Anyone can regenerate it against the chain with `contracts/scripts/auction-manifest.sh` and diff.
+
 ## How the auction works
 
 - **Bid the maximum you are willing to pay.** The top 90 bids win. Every winner pays the same price: the 90th-highest bid (the clearing price). The excess over the clearing price is refunded at settlement.

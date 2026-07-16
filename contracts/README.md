@@ -29,8 +29,20 @@ scripts/
   monitor-auction.sh           Cron monitor with Discord alerts
   rpc-load-test.sh             Progressive RPC capacity testing
   test-operations.sh           Network-free regression tests for the two scripts above
+deployments/
+  auction-20260716.json        Mainnet deployment manifest
 AUCTION_RUNBOOK.md             Deploy/settle/incident procedures
 ```
+
+## Mainnet deployment
+
+| | |
+|---|---|
+| Auction | [`0x902237C2B0A4B428eefEd862019D5FF0a6E509fd`](https://etherscan.io/address/0x902237C2B0A4B428eefEd862019D5FF0a6E509fd) (source-verified) |
+| Deployed | 2026-07-16 |
+| Runtime codehash | `0x9c6a9b7aa81314c29cbe93f0d8c3f841c4db09d6b7e15dae8f260c0f14a59cfe` |
+| Schedule | Opens 2026-07-22 17:00 UTC, 24h duration, absolute end 2026-07-24 17:00 UTC |
+| Manifest | [deployments/auction-20260716.json](deployments/auction-20260716.json) |
 
 ## Build and test
 
