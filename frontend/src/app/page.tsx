@@ -116,7 +116,7 @@ function Countdown({
 
 // Fallback open, only for builds with no contract address to read a startTime from.
 // With a configured contract the rail uses the on-chain schedule instead.
-const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 22, 17, 0, 0); // 22 July 2026, 17:00 UTC
+const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
 // Scheduled duration (24h) — only used to give the calendar event an end time.
 const AUCTION_END_MS = AUCTION_LAUNCH_MS + 24 * 60 * 60 * 1000;
 

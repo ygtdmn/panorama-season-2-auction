@@ -6,7 +6,7 @@ Panorama is an autonomous generative art system that paints one segment of a con
 
 ## Mainnet deployment
 
-`PanoramaSeason2Auction` is live and source-verified at [`0x902237C2B0A4B428eefEd862019D5FF0a6E509fd`](https://etherscan.io/address/0x902237C2B0A4B428eefEd862019D5FF0a6E509fd). Bidding opens 2026-07-22 17:00 UTC and runs 24 hours, with at most 24 further hours of anti-snipe extension. Reserve 0.1 ETH, minimum increment 5%.
+`PanoramaSeason2Auction` is live and source-verified at [`0x902237C2B0A4B428eefEd862019D5FF0a6E509fd`](https://etherscan.io/address/0x902237C2B0A4B428eefEd862019D5FF0a6E509fd). Bidding opens 2026-07-21 17:00 UTC and runs 24 hours, with at most 24 further hours of anti-snipe extension. Reserve 0.1 ETH, minimum increment 5%.
 
 The deployment manifest, recording every immutable, the runtime codehash, and the NFT and mint controller state at deploy time, is committed at [contracts/deployments/auction-20260716.json](contracts/deployments/auction-20260716.json). Anyone can regenerate it against the chain with `contracts/scripts/auction-manifest.sh` and diff.
 
