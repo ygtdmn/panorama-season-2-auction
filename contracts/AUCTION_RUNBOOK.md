@@ -89,8 +89,13 @@ forge script script/DeployAuction.s.sol:DeployAuction --rpc-url mainnet --broadc
 The script validates the full config, requires `totalMinted == 90` and `mintCap == 90`,
 and prints the **runtime code hash**. Then:
 
-1. Record the manifest: `scripts/auction-manifest.sh > deployments/auction-$(date -u +%Y%m%d).json`
-   and commit it.
+1. Record the manifest (requires `RPC_URL` and `PANORAMA_AUCTION_ADDRESS`; run from a clean
+   tree so `gitDirty` records false):
+   ```bash
+   RPC_URL=... PANORAMA_AUCTION_ADDRESS=... \
+     scripts/auction-manifest.sh > deployments/auction-$(date -u +%Y%m%d).json
+   ```
+   and commit it. If the script fails, delete the empty file the redirect left behind.
 2. Verify the source on Etherscan (the `--verify` flag, or `forge verify-contract`).
 3. Obtain the codehash independently (`cast codehash $AUCTION --rpc-url $RPC`) and compare
    with the deploy output; this value gates every later script.

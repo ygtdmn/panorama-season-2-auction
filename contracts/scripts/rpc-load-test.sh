@@ -38,7 +38,35 @@ for dependency in cast curl awk grep mktemp sort wc; do
   command -v "$dependency" >/dev/null 2>&1 || die "required command not found: $dependency"
 done
 
-: "${RPC_URL:?RPC_URL is required}"
+# Read one value from the project .env as plain data (never sourced/executed).
+dotenv_lookup() {
+  local file line
+  file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.env"
+  [[ -f "$file" ]] || return 0
+  line=$(grep -E "^${1}=" "$file" | tail -n 1) || return 0
+  line=${line#*=}
+  line=${line%$'\r'}
+  line=${line#"${line%%[![:space:]]*}"}
+  line=${line%"${line##*[![:space:]]}"}
+  line=${line%\"}; line=${line#\"}
+  line=${line%\'}; line=${line#\'}
+  printf '%s' "$line"
+}
+
+# Alchemy endpoint from API_KEY_ALCHEMY (env or .env), same shape as foundry.toml.
+rpc_url_default() {
+  local key chain
+  key=${API_KEY_ALCHEMY:-$(dotenv_lookup API_KEY_ALCHEMY)}
+  [[ -n "$key" ]] || return 0
+  chain=${RPC_CHAIN:-mainnet}
+  case "$chain" in
+    mainnet | sepolia) printf 'https://eth-%s.g.alchemy.com/v2/%s' "$chain" "$key" ;;
+    *) die "RPC_CHAIN must be mainnet or sepolia, got: $chain" ;;
+  esac
+}
+
+RPC_URL=${RPC_URL:-$(rpc_url_default)}
+: "${RPC_URL:?RPC_URL is required (set it, or provide API_KEY_ALCHEMY in the environment or .env)}"
 
 REQUESTS="${RPC_LOAD_REQUESTS:-1}"
 CONCURRENCY="${RPC_LOAD_CONCURRENCY:-1}"

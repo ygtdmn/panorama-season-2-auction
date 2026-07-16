@@ -7,11 +7,52 @@
 #   RPC_URL=https://... PANORAMA_AUCTION_ADDRESS=0x... scripts/auction-manifest.sh \
 #     > deployments/auction-$(date -u +%Y%m%d).json
 #
+# Both settings fall back to the project .env (read as data, never sourced): the
+# auction address from PANORAMA_AUCTION_ADDRESS, and RPC_URL formed from
+# API_KEY_ALCHEMY exactly like foundry.toml's rpc_endpoints (RPC_CHAIN=mainnet|sepolia
+# picks the network, default mainnet).
+#
 # Requires: cast (foundry), git, jq (optional; output is valid JSON without it).
 set -euo pipefail
 
-: "${RPC_URL:?RPC_URL is required}"
-: "${PANORAMA_AUCTION_ADDRESS:?PANORAMA_AUCTION_ADDRESS is required}"
+# Read one value from the project .env as plain data (never sourced/executed).
+dotenv_lookup() {
+  local file line
+  file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.env"
+  [[ -f "$file" ]] || return 0
+  line=$(grep -E "^${1}=" "$file" | tail -n 1) || return 0
+  line=${line#*=}
+  line=${line%$'\r'}
+  line=${line#"${line%%[![:space:]]*}"}
+  line=${line%"${line##*[![:space:]]}"}
+  line=${line%\"}; line=${line#\"}
+  line=${line%\'}; line=${line#\'}
+  printf '%s' "$line"
+}
+
+# Alchemy endpoint from API_KEY_ALCHEMY (env or .env), same shape as foundry.toml.
+rpc_url_default() {
+  local key chain
+  key=${API_KEY_ALCHEMY:-$(dotenv_lookup API_KEY_ALCHEMY)}
+  [[ -n "$key" ]] || return 0
+  chain=${RPC_CHAIN:-mainnet}
+  case "$chain" in
+    mainnet | sepolia) printf 'https://eth-%s.g.alchemy.com/v2/%s' "$chain" "$key" ;;
+    *)
+      printf 'RPC_CHAIN must be mainnet or sepolia, got: %s\n' "$chain" >&2
+      return 1
+      ;;
+  esac
+}
+
+RPC_URL=${RPC_URL:-$(rpc_url_default)}
+PANORAMA_AUCTION_ADDRESS=${PANORAMA_AUCTION_ADDRESS:-$(dotenv_lookup PANORAMA_AUCTION_ADDRESS)}
+
+: "${RPC_URL:?RPC_URL is required (set it, or provide API_KEY_ALCHEMY in the environment or .env)}"
+: "${PANORAMA_AUCTION_ADDRESS:?PANORAMA_AUCTION_ADDRESS is required (set it in the environment or .env)}"
+
+[[ "$PANORAMA_AUCTION_ADDRESS" =~ ^0x[0-9a-fA-F]{40}$ ]] \
+  || { printf 'PANORAMA_AUCTION_ADDRESS is not a 20-byte hex address: %s\n' "$PANORAMA_AUCTION_ADDRESS" >&2; exit 1; }
 
 A="$PANORAMA_AUCTION_ADDRESS"
 call() { cast call "$A" "$1" --rpc-url "$RPC_URL" | awk '{print $1}'; }

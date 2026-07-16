@@ -36,8 +36,38 @@ for dependency in cast curl timeout flock date mkdir dirname mktemp mv chmod sta
   command -v "$dependency" >/dev/null 2>&1 || die "required command not found: $dependency"
 done
 
-: "${RPC_URL:?RPC_URL is required}"
-: "${AUCTION:?AUCTION is required}"
+# Read one value from the project .env as plain data (never sourced/executed).
+dotenv_lookup() {
+  local file line
+  file="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.env"
+  [[ -f "$file" ]] || return 0
+  line=$(grep -E "^${1}=" "$file" | tail -n 1) || return 0
+  line=${line#*=}
+  line=${line%$'\r'}
+  line=${line#"${line%%[![:space:]]*}"}
+  line=${line%"${line##*[![:space:]]}"}
+  line=${line%\"}; line=${line#\"}
+  line=${line%\'}; line=${line#\'}
+  printf '%s' "$line"
+}
+
+# Alchemy endpoint from API_KEY_ALCHEMY (env or .env), same shape as foundry.toml.
+rpc_url_default() {
+  local key chain
+  key=${API_KEY_ALCHEMY:-$(dotenv_lookup API_KEY_ALCHEMY)}
+  [[ -n "$key" ]] || return 0
+  chain=${RPC_CHAIN:-mainnet}
+  case "$chain" in
+    mainnet | sepolia) printf 'https://eth-%s.g.alchemy.com/v2/%s' "$chain" "$key" ;;
+    *) die "RPC_CHAIN must be mainnet or sepolia, got: $chain" ;;
+  esac
+}
+
+RPC_URL=${RPC_URL:-$(rpc_url_default)}
+AUCTION=${AUCTION:-$(dotenv_lookup PANORAMA_AUCTION_ADDRESS)}
+
+: "${RPC_URL:?RPC_URL is required (set it, or provide API_KEY_ALCHEMY in the environment or .env)}"
+: "${AUCTION:?AUCTION is required (set it, or provide PANORAMA_AUCTION_ADDRESS in the environment or .env)}"
 DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL:-}"
 RPC_TIMEOUT_SECONDS="${RPC_TIMEOUT_SECONDS:-15}"
 WEBHOOK_CONNECT_TIMEOUT_SECONDS="${WEBHOOK_CONNECT_TIMEOUT_SECONDS:-5}"
