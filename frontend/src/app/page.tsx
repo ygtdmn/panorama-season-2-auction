@@ -114,8 +114,9 @@ function Countdown({
   );
 }
 
-// Scheduled Season 2 auction open, before any contract exists to read a startTime from.
-const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 21, 17, 0, 0); // 21 July 2026, 17:00 UTC
+// Fallback open, only for builds with no contract address to read a startTime from.
+// With a configured contract the rail uses the on-chain schedule instead.
+const AUCTION_LAUNCH_MS = Date.UTC(2026, 6, 22, 17, 0, 0); // 22 July 2026, 17:00 UTC
 // Scheduled duration (24h) — only used to give the calendar event an end time.
 const AUCTION_END_MS = AUCTION_LAUNCH_MS + 24 * 60 * 60 * 1000;
 
@@ -134,15 +135,20 @@ function calStamp(ms: number): string {
   );
 }
 
-const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/render?action=TEMPLATE" +
-  `&text=${encodeURIComponent(CAL_TITLE)}` +
-  `&dates=${calStamp(AUCTION_LAUNCH_MS)}/${calStamp(AUCTION_END_MS)}` +
-  `&details=${encodeURIComponent(CAL_DETAILS)}`;
+function calUrl(startMs: number, endMs: number): string {
+  return (
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(CAL_TITLE)}` +
+    `&dates=${calStamp(startMs)}/${calStamp(endMs)}` +
+    `&details=${encodeURIComponent(CAL_DETAILS)}`
+  );
+}
 
-// Pre-deploy countdown to the announced open. Runs off the device clock (there is no chain
-// time yet); starts null so the server and first client render match, then ticks every second.
-function LaunchCountdown() {
+const GOOGLE_CAL_URL = calUrl(AUCTION_LAUNCH_MS, AUCTION_END_MS);
+
+// Countdown to the open. Runs off the device clock (pre-deploy there is no chain time, and
+// pre-start the drift is cosmetic); starts null so the server and first client render match.
+function LaunchCountdown({ targetMs }: { targetMs: number }) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Date.now());
@@ -150,7 +156,7 @@ function LaunchCountdown() {
     return () => clearInterval(id);
   }, []);
   const left =
-    now === null ? null : Math.max(0, Math.floor((AUCTION_LAUNCH_MS - now) / 1000));
+    now === null ? null : Math.max(0, Math.floor((targetMs - now) / 1000));
   if (left === 0)
     return (
       <span className="font-serif font-medium text-3xl tracking-[-0.02em] text-foreground leading-none">
@@ -186,11 +192,11 @@ function LaunchCountdown() {
 
 // The announced open, rendered in the visitor's own locale and timezone. Client-only (starts
 // null) so the server render and hydration agree instead of formatting in the server's zone.
-function LaunchDate() {
+function LaunchDate({ targetMs }: { targetMs: number }) {
   const [label, setLabel] = useState<string | null>(null);
   useEffect(() => {
     setLabel(
-      new Date(AUCTION_LAUNCH_MS).toLocaleString(undefined, {
+      new Date(targetMs).toLocaleString(undefined, {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -199,7 +205,7 @@ function LaunchDate() {
         timeZoneName: "short",
       }),
     );
-  }, []);
+  }, [targetMs]);
   return (
     <span className="font-mono text-micro uppercase tracking-[0.14em] text-faint">
       {label ?? "···"}
@@ -299,6 +305,20 @@ export default function AuctionPage() {
   // but the rail advertises the auction instead of trying to read state that isn't there.
   const comingSoon = !PANORAMA_AUCTION_ADDRESS && !demo;
   const loading = !comingSoon && !demo && !s.ready && !s.readFailed;
+  // Contract configured but bidding not open yet: same advertisement rail, except the
+  // countdown and calendar follow the on-chain schedule (setSchedule can move it until
+  // the first bid). Live stats appear only once bidding opens.
+  const preOpen =
+    !comingSoon && !demo && s.ready && now !== 0 && now < s.startTime;
+  const launchMs = preOpen ? s.startTime * 1000 : AUCTION_LAUNCH_MS;
+  const launchCalUrl = preOpen
+    ? calUrl(
+        launchMs,
+        s.scheduledEndTime > s.startTime
+          ? s.scheduledEndTime * 1000
+          : launchMs + 24 * 60 * 60 * 1000,
+      )
+    : GOOGLE_CAL_URL;
   const biddable =
     s.phase === "active" &&
     !s.paused &&
@@ -367,16 +387,16 @@ export default function AuctionPage() {
     return "";
   })();
 
-  const railBody = comingSoon ? (
+  const railBody = comingSoon || preOpen ? (
     <div className="flex flex-col gap-10 py-10 md:py-14">
       <div className="flex flex-col gap-5">
         <span className="font-mono text-micro uppercase tracking-[0.24em] text-faint">
           Bidding opens in
         </span>
-        <LaunchCountdown />
-        <LaunchDate />
+        <LaunchCountdown targetMs={launchMs} />
+        <LaunchDate targetMs={launchMs} />
         <a
-          href={GOOGLE_CAL_URL}
+          href={launchCalUrl}
           target="_blank"
           rel="noreferrer"
           className="font-mono text-micro uppercase tracking-[0.18em] text-muted hover:text-foreground transition-colors pt-1"
