@@ -167,7 +167,9 @@ contract SettleAuctionAtomic is BaseScript {
 
         console2.log(
             string.concat(
-                '{"version":"1.0","chainId":"1","createdAt":',
+                '{"version":"1.0","chainId":"',
+                vm.toString(block.chainid),
+                '","createdAt":',
                 vm.toString(block.timestamp * 1000),
                 ',"meta":{"name":"Panorama Season 2 atomic settlement","description":"authorize -> exact cap -> finalize all -> revoke"},"transactions":[',
                 txs,
@@ -180,8 +182,14 @@ contract SettleAuctionAtomic is BaseScript {
         return string.concat('{"to":"', vm.toString(to), '","value":"0","data":"', vm.toString(data), '"}');
     }
 
+    /// @dev Chain gate. Mainnet by default; testnet rehearsal variants override this
+    ///      (see SettleAuctionAtomicSepolia) so the production script itself stays mainnet-only.
+    function _requiredChainId() internal pure virtual returns (uint256) {
+        return MAINNET_CHAIN_ID;
+    }
+
     function _loadExpected() internal view returns (Expected memory e) {
-        require(block.chainid == MAINNET_CHAIN_ID, "WRONG_CHAIN_ID");
+        require(block.chainid == _requiredChainId(), "WRONG_CHAIN_ID");
 
         e.nft = vm.envAddress("PANORAMA_NFT");
         e.controller = vm.envAddress("PANORAMA_MINT_CONTROLLER");
