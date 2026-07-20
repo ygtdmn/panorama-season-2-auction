@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAddressLabel } from "@/app/hooks/useAddressLabel";
+import { SEASON_2_TECHNOLOGIES } from "@/lib/season2Technologies";
 import type {
 	AuctionBidRow,
 	AuctionPhase,
@@ -10,6 +11,61 @@ import type {
 } from "../hooks/useAuctionState";
 import { eth, Label, short } from "./ui";
 import { StandingsInfoModal } from "./StandingsInfoModal";
+
+/**
+ * Rank + technology cell. Rank = reveal slot = technology index (token #90+rank). When the
+ * narrow rail truncates the name, the cell becomes a tooltip anchor (hover on desktop, tap
+ * on touch) revealing the full name.
+ */
+function SlotCell({ rank }: { rank: number | null }) {
+	const tech = rank === null ? undefined : SEASON_2_TECHNOLOGIES[rank - 1]?.name;
+	const techRef = useRef<HTMLSpanElement>(null);
+	const [techTruncated, setTechTruncated] = useState(false);
+	useEffect(() => {
+		const el = techRef.current;
+		if (!el) return;
+		const measure = () => setTechTruncated(el.scrollWidth > el.clientWidth + 1);
+		measure();
+		if (typeof ResizeObserver === "undefined") return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [tech]);
+
+	return (
+		<span
+			className="relative flex items-baseline gap-1.5 w-2/5 shrink-0 min-w-0 pr-2"
+			data-tooltip={tech && techTruncated ? tech : undefined}
+			data-tooltip-tap={tech && techTruncated ? "" : undefined}
+		>
+			<span className="font-mono text-micro 4xl:text-xs tabular-nums text-faint w-9 4xl:w-12 shrink-0">
+				{rank === null ? "—" : `#${rank}`}
+			</span>
+			{tech && (
+				<span
+					ref={techRef}
+					className={`font-mono text-micro 4xl:text-xs text-faint truncate ${
+						techTruncated ? "cursor-help" : ""
+					}`}
+				>
+					{tech}
+				</span>
+			)}
+		</span>
+	);
+}
+
+/** An unclaimed slot: the technology is shown, no bid holds it yet. */
+function EmptySlotRow({ rank }: { rank: number }) {
+	return (
+		<li className="relative flex items-center h-10 3xl:h-11 4xl:h-12 pl-3 pr-3 4xl:px-5">
+			<SlotCell rank={rank} />
+			<span className="relative flex-1 min-w-0 truncate font-mono text-micro uppercase tracking-[0.1em] text-faint">
+				no bids yet
+			</span>
+		</li>
+	);
+}
 
 /** One row of the board. Resolves ENS (mainnet) unless disabled (demo). */
 function BidRow({
@@ -73,9 +129,7 @@ function BidRow({
 			/>
 			{mine && <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-foreground" />}
 
-			<span className="relative font-mono text-micro 4xl:text-xs tabular-nums text-faint w-9 4xl:w-12 shrink-0">
-				{rank === null ? "—" : `#${rank}`}
-			</span>
+			<SlotCell rank={rank} />
 			<span className="relative flex items-baseline gap-2 min-w-0 flex-1">
 				<span
 					className={`font-mono text-xs 4xl:text-sm truncate ${mine ? "text-foreground" : "text-muted"}`}
@@ -184,13 +238,11 @@ export function Standings({
 					</div>
 				)}
 
-				{empty ? (
+				{empty && phase !== "active" ? (
 					<p className="font-sans text-sm text-muted mt-4 py-8 px-4 text-center bg-surface">
-						{phase === "active"
-							? "No bids yet. The highest bid takes #1."
-							: wonHistoryPending || wonHistoryUnsafe || wonExpectedCount > 0
-								? "Winner history is not complete yet."
-								: "Closed with no bids."}
+						{wonHistoryPending || wonHistoryUnsafe || wonExpectedCount > 0
+							? "Winner history is not complete yet."
+							: "Closed with no bids."}
 					</p>
 			) : (
 				<>
@@ -225,6 +277,11 @@ export function Standings({
 								dim={phase === "cancelled"}
 							/>
 						))}
+						{phase !== "cancelled" &&
+							Array.from(
+								{ length: Math.max(0, maxUnits - won.length - bids.length) },
+								(_, i) => won.length + bids.length + i + 1,
+							).map((slot) => <EmptySlotRow key={`slot-${slot}`} rank={slot} />)}
 					</ol>
 
 					{isFull && phase === "active" && (
