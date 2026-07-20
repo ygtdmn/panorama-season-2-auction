@@ -61,7 +61,7 @@ export default function AuctionAdminPage() {
     state: s,
     actions,
     controls,
-  } = useAuctionSession(6_000);
+  } = useAuctionSession();
   const now = useChainNow(s.chainTime);
   const [batch, setBatch] = useState("45");
   const [lastTx, setLastTx] = useState<`0x${string}`>();

@@ -247,9 +247,9 @@ function useAuctionDemo(active: boolean) {
  * Single entry point for the auction pages. Always calls the same hooks (stable
  * order) and returns either the live-contract bundle or the in-memory demo one.
  */
-export function useAuctionSession(pollMs?: number): AuctionSession {
+export function useAuctionSession(): AuctionSession {
   const demo = useIsDemo();
-  const realState = useAuctionState(pollMs);
+  const realState = useAuctionState();
   const realActions = useAuctionActions(() => realState.refetch());
   const { address, isConnected } = useAccount();
   const demoBundle = useAuctionDemo(demo);

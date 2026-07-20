@@ -21,6 +21,7 @@ import { describeAuctionError } from "@/lib/auctionErrors";
 import type { WriteName } from "@/app/auction/hooks/useAuctionActions";
 import { useAuctionSession } from "@/app/auction/hooks/useAuctionSession";
 import { applyRailMax, readRailMaxAttribute } from "@/lib/railMax";
+import { SEASON_2_TECHNOLOGIES } from "@/lib/season2Technologies";
 import { HeroPanorama } from "@/app/auction/components/HeroPanorama";
 import { DemoBar } from "@/app/auction/components/DemoBar";
 import { Standings } from "@/app/auction/components/Standings";
@@ -654,7 +655,11 @@ export default function AuctionPage() {
         <div>
           <Label>Your bids / {s.yourBids.length}</Label>
           <ul className="mt-3 flex flex-col gap-2">
-            {s.yourBids.map((b) => {
+            {[...s.yourBids]
+              .sort((x, y) =>
+                y.amount > x.amount ? 1 : y.amount < x.amount ? -1 : x.id - y.id,
+              )
+              .map((b) => {
 			  const raiseRaw = raiseInputs[b.id] || "";
 			  const raiseWei = parseEthInput(raiseRaw);
 			  const raiseNormalized = normalizeDecimalInput(raiseRaw);
@@ -666,12 +671,35 @@ export default function AuctionPage() {
 				raiseWei !== null &&
 				raiseWei > 0n &&
 				raiseWei < s.minIncreaseForExtension;
+              // Live board position: same ordering the standings use (minted winners
+              // first, then active bids high -> low). Held bids are always in the
+              // top 90, so an active bid always has a position.
+              const boardIndex = s.allBids.findIndex((row) => row.id === b.id);
+              const rank =
+                s.phase === "active" && boardIndex !== -1
+                  ? s.wonBids.length + boardIndex + 1
+                  : null;
+              const rankTech =
+                rank === null ? undefined : SEASON_2_TECHNOLOGIES[rank - 1]?.name;
               return (
                 <li
                   key={b.id}
-                  className="flex items-center gap-3 bg-surface px-3 py-2.5"
+                  className="relative flex items-center gap-3 bg-surface pl-4 pr-3 py-3.5"
                 >
-                  <span className="font-serif text-base tabular-nums text-foreground w-20">
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-[2px] bg-foreground"
+                  />
+                  {rank !== null && (
+                    <span
+                      className="font-mono text-micro tabular-nums text-faint w-8 shrink-0 cursor-help"
+                      data-tooltip={rankTech}
+                      data-tooltip-tap={rankTech ? "" : undefined}
+                    >
+                      {`#${rank}`}
+                    </span>
+                  )}
+                  <span className="font-serif text-lg tabular-nums text-foreground w-24 shrink-0">
                     {eth(b.amount)}{" "}
                     <span className="font-mono text-micro text-faint">
                       ETH
@@ -692,12 +720,12 @@ export default function AuctionPage() {
                         inputMode="decimal"
                         placeholder={
                           inExtensionWindow
-                            ? `+ ${ethCeil(s.minIncreaseForExtension)}`
-                            : "+ eth"
+                            ? `add ${ethCeil(s.minIncreaseForExtension)}`
+                            : "add eth"
                         }
                         aria-label="Raise amount in ETH"
 						aria-invalid={raiseInvalid}
-                        className="w-16 bg-transparent border-b border-line focus:border-foreground outline-none font-mono text-xs tabular-nums text-foreground placeholder:text-faint pb-1 transition-colors"
+                        className="w-24 bg-transparent border-b border-line focus:border-foreground outline-none font-mono text-sm tabular-nums text-foreground placeholder:text-faint pb-1.5 transition-colors"
                       />
                       <button
                         type="button"
@@ -714,13 +742,18 @@ export default function AuctionPage() {
 							actions.increaseBid(b.id, raiseWei);
 						  }
 						}}
-                        className="font-mono text-micro uppercase tracking-[0.14em] text-foreground hover:opacity-60 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity cursor-pointer"
+                        className="font-mono text-micro uppercase tracking-[0.14em] border border-line px-3 py-1.5 text-foreground hover:border-foreground active:translate-y-px disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
                       >
 						{raiseInvalid
 						  ? "invalid amount"
 						  : raiseTooLow
 							? "min too low"
-							: pendingActionLabel(actions, "raise")}
+							: pendingActionLabel(
+								actions,
+								raiseWei !== null && raiseWei > 0n
+								  ? `raise to ${eth(b.amount + raiseWei)}`
+								  : "raise",
+							  )}
                       </button>
 					{raiseInvalid && (
 					  <span className="basis-full font-mono text-micro text-signal text-right" role="alert">

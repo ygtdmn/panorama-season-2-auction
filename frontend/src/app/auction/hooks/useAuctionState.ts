@@ -1,6 +1,12 @@
 "use client";
 
-import { useAccount, useBlock, usePublicClient, useReadContracts } from "wagmi";
+import {
+	useAccount,
+	useBlock,
+	useBlockNumber,
+	usePublicClient,
+	useReadContracts,
+} from "wagmi";
 import { getAbiItem, isAddressEqual } from "viem";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,9 +22,6 @@ export type AuctionPhase = "active" | "finalizing" | "settled" | "cancelled";
 
 const PHASES: AuctionPhase[] = ["active", "finalizing", "settled", "cancelled"];
 
-/** Poll cadence: relaxed normally, tight inside the anti-snipe endgame. */
-const NEAR_END_WINDOW_S = 15 * 60;
-const NEAR_END_POLL_MS = 3_000;
 const SNAPSHOT_STALE_MS = 45_000;
 /** Write locks engage the moment data is degraded/stale; the banner waits this long, so a
  *  single failed poll (self-healing within seconds) never flashes an alarming surface. */
@@ -135,18 +138,22 @@ const base = {
 
 const wonEvent = getAbiItem({ abi: panoramaAuctionAbi, name: "Won" });
 
-export function useAuctionState(pollMs = 12_000): AuctionState {
+export function useAuctionState(): AuctionState {
 	const { address } = useAccount();
 	const enabled = !!PANORAMA_AUCTION_ADDRESS;
 	const publicClient = usePublicClient();
 
-	// ---- chain clock: watch blocks; the block timestamp is the authoritative "now" ----------
+	// ---- chain clock: poll the cheap block number, then fetch each new block exactly once. ----
 	const [chainTime, setChainTime] = useState<ChainTimeAnchor>();
-	const block = useBlock({
+	const latestBlock = useBlockNumber({
 		watch: enabled ? { pollingInterval: 4_000 } : false,
 		query: { enabled },
 	});
-	const blockNumber = block.data?.number;
+	const blockNumber = latestBlock.data;
+	const block = useBlock({
+		blockNumber,
+		query: { enabled: enabled && blockNumber !== undefined },
+	});
 	const blockTimestamp = block.data?.timestamp;
 	useEffect(() => {
 		if (blockTimestamp === undefined) return;
@@ -199,21 +206,12 @@ export function useAuctionState(pollMs = 12_000): AuctionState {
 				{ ...base, functionName: "requiredMintCapForSettlement" }, // 38
 				{ ...base, functionName: "mintingUnavailable" }, // 39
 			],
-		query: { enabled, refetchInterval: pollMs },
+		query: { enabled },
 	});
 	const g = global.data as readonly unknown[] | undefined;
 
 	const phase: AuctionPhase = PHASES[Number(g?.[0] ?? 0)] ?? "active";
 	const endTime = Number((g?.[3] as bigint) ?? 0n);
-
-	// Tight polling inside the endgame: extensions land block by block and the UI must follow.
-	const chainNowApprox = chainTime?.timestamp ?? 0;
-	const nearEnd =
-		phase === "active" &&
-		endTime > 0 &&
-		chainNowApprox > 0 &&
-		endTime - chainNowApprox < NEAR_END_WINDOW_S;
-	const effectivePollMs = nearEnd ? NEAR_END_POLL_MS : pollMs;
 
 	const account = useReadContracts({
 		allowFailure: false,
@@ -224,7 +222,7 @@ export function useAuctionState(pollMs = 12_000): AuctionState {
 					{ ...base, functionName: "bidsOf", args: [address] },
 				]
 			: [],
-		query: { enabled: enabled && !!address, refetchInterval: effectivePollMs },
+		query: { enabled: enabled && !!address },
 	});
 	const a = account.data as readonly unknown[] | undefined;
 	const [healthNow, setHealthNow] = useState(() => Date.now());
@@ -256,30 +254,35 @@ export function useAuctionState(pollMs = 12_000): AuctionState {
 		unsafeSince !== null &&
 		healthNow - unsafeSince >= DEGRADED_BANNER_AFTER_MS;
 
-	// Re-read on every new block: on-chain state only changes with blocks, so this both caps
-	// staleness at one block and avoids blind trust in the device clock or a fixed interval.
-	const refetchRef = useRef<() => void>(() => {});
+	// The query keys stay stable so the last complete snapshot remains visible while a new one
+	// loads. A block-number change triggers only the two state multicalls—not another block read.
+	const refetchStateRef = useRef<() => void>(() => {});
 	useEffect(() => {
-		refetchRef.current = () => {
-			// Refetch the block too: a stalled block-watch is the usual cause of a stuck snapshot,
-			// and refreshing the anchor is what lets the clock and per-block refetch recover.
-			block.refetch();
+		refetchStateRef.current = () => {
 			global.refetch();
 			if (address) account.refetch();
 		};
 	});
+	const previousBlockRef = useRef<bigint | undefined>(undefined);
 	useEffect(() => {
-		if (blockNumber !== undefined) refetchRef.current();
+		if (blockNumber === undefined) return;
+		const previous = previousBlockRef.current;
+		previousBlockRef.current = blockNumber;
+		// Global/account queries already fetch on mount; only subsequent blocks need
+		// an explicit refresh.
+		if (previous !== undefined && previous !== blockNumber) refetchStateRef.current();
 	}, [blockNumber]);
 
-	// Keep the tight cadence applied to the global query as well (react-query picks up the
-	// changed refetchInterval through re-render; this mirrors `account` above).
+	// Manual retries, post-transaction reconciliation, and stale-state recovery refresh all
+	// three query families. Normal live updates use the block-driven state refresh above.
+	const refetchRef = useRef<() => void>(() => {});
 	useEffect(() => {
-		if (!nearEnd) return;
-		const t = setInterval(() => refetchRef.current(), NEAR_END_POLL_MS);
-		return () => clearInterval(t);
-	}, [nearEnd]);
-
+		refetchRef.current = () => {
+			latestBlock.refetch();
+			block.refetch();
+			refetchStateRef.current();
+		};
+	});
 	// Self-heal: the moment a snapshot looks stale (the health tick re-checks every 5s), force a
 	// full refetch instead of surfacing a scary banner. This is what keeps the data from getting
 	// stuck when the block-watch or a poll transiently stalls.
