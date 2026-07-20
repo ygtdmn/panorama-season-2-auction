@@ -571,7 +571,7 @@ export default function AuctionPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <Label>Place a bid</Label>
+              <Label>{s.yourBidCount > 0 ? "Place another bid" : "Place a bid"}</Label>
               <div className="flex items-baseline gap-3 border-b border-line focus-within:border-foreground transition-colors duration-200 pb-3">
                 <input
                   value={bidInput}
@@ -636,7 +636,12 @@ export default function AuctionPage() {
 				    }
 				  }}
                 >
-				  {pendingActionLabel(actions, "place bid")}
+				  {pendingActionLabel(
+					    actions,
+					    s.yourBidCount === 0
+						  ? "place bid"
+						  : `place ${["2nd", "3rd", "4th"][s.yourBidCount - 1]} bid`,
+					  )}
                 </button>
               )}
             </div>
