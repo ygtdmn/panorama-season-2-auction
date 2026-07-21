@@ -146,7 +146,7 @@ export function useAuctionState(): AuctionState {
 	// ---- chain clock: poll the cheap block number, then fetch each new block exactly once. ----
 	const [chainTime, setChainTime] = useState<ChainTimeAnchor>();
 	const latestBlock = useBlockNumber({
-		watch: enabled ? { pollingInterval: 4_000 } : false,
+		watch: enabled ? { enabled: true, pollingInterval: 4_000 } : false,
 		query: { enabled },
 	});
 	const blockNumber = latestBlock.data;
