@@ -36,7 +36,7 @@ export const AUDIT_REPORT_URL =
 
 /** evm.now shows a contract's verified/decompiled source by address. */
 export function getEvmNowUrl(address: string): string {
-	return `https://evm.now/address/${address}`;
+	return `https://evm.now/address/${address}/code`;
 }
 
 export const OG_IMAGE_URL = `${CDN_BASE_URL}/season2/season2-og-preview.webp`;
