@@ -28,7 +28,7 @@ export const AUCTION_SITE_URL = "https://season2.panorama.garden";
 
 // Public source + on-chain code links, so anyone can read the contract before bidding.
 export const GITHUB_URL =
-	process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/ygtdmn/panorama";
+	process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/ygtdmn/panorama-season-2-auction";
 
 // The published security review (public edition), linked from the FAQ and footer.
 export const AUDIT_REPORT_URL =
