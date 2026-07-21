@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAddressLabel } from "@/app/hooks/useAddressLabel";
+import { getBlockExplorerAddressUrl } from "@/lib/constants";
 import { SEASON_2_TECHNOLOGIES } from "@/lib/season2Technologies";
 import type {
 	AuctionBidRow,
@@ -55,13 +56,13 @@ function SlotCell({ rank }: { rank: number | null }) {
 	);
 }
 
-/** An unclaimed slot: the technology is shown, no bid holds it yet. */
-function EmptySlotRow({ rank }: { rank: number }) {
+/** An unclaimed slot: the technology is shown, no bid holds it. */
+function EmptySlotRow({ rank, over }: { rank: number; over: boolean }) {
 	return (
 		<li className="relative flex items-center h-10 3xl:h-11 4xl:h-12 pl-3 pr-3 4xl:px-5">
 			<SlotCell rank={rank} />
 			<span className="relative flex-1 min-w-0 truncate font-mono text-micro uppercase tracking-[0.1em] text-faint">
-				no bids yet
+				{over ? "ended with no bids" : "no bids yet"}
 			</span>
 		</li>
 	);
@@ -131,11 +132,14 @@ function BidRow({
 
 			<SlotCell rank={rank} />
 			<span className="relative flex items-baseline gap-2 min-w-0 flex-1">
-				<span
-					className={`font-mono text-xs 4xl:text-sm truncate ${mine ? "text-foreground" : "text-muted"}`}
+				<a
+					href={getBlockExplorerAddressUrl(bidder)}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={`font-mono text-xs 4xl:text-sm truncate underline-offset-2 hover:underline hover:text-foreground transition-colors ${mine ? "text-foreground" : "text-muted"}`}
 				>
 					{display}
-				</span>
+				</a>
 				{tag && (
 					<span className="font-mono text-micro uppercase tracking-[0.1em] text-faint shrink-0">{tag}</span>
 				)}
@@ -156,6 +160,7 @@ function BidRow({
 export function Standings({
 	bids,
 	won = [],
+	over,
 	firstTokenId,
 	you,
 	activeBids,
@@ -171,6 +176,7 @@ export function Standings({
 }: {
 	bids: AuctionBidRow[]; // live bids, sorted high -> low
 	won?: WonRow[]; // minted winners, sorted by tokenId (mint order = bid order)
+	over: boolean; // bidding can no longer change the board (ended or past active)
 	firstTokenId: number;
 	you?: string;
 	activeBids: number;
@@ -281,7 +287,9 @@ export function Standings({
 							Array.from(
 								{ length: Math.max(0, maxUnits - won.length - bids.length) },
 								(_, i) => won.length + bids.length + i + 1,
-							).map((slot) => <EmptySlotRow key={`slot-${slot}`} rank={slot} />)}
+							).map((slot) => (
+								<EmptySlotRow key={`slot-${slot}`} rank={slot} over={over} />
+							))}
 					</ol>
 
 					{isFull && phase === "active" && (

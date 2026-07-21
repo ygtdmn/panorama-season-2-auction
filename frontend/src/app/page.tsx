@@ -368,9 +368,18 @@ export default function AuctionPage() {
 		!s.supplyMismatched &&
 		!s.mintingUnavailable;
 
+  // After finalize starts, active bids drain to zero as winners mint; the frozen
+  // winner count is the real "slots filled" from then on.
+  const slotsFilled =
+    s.phase === "finalizing" || s.phase === "settled"
+      ? s.winnerCount
+      : s.activeBids;
+
   const statusNote = (() => {
     if (s.phase === "settled")
-      return "Settled. Winners minted highest-first; excess refunded.";
+      return `Auction settled. ${s.winnerCount} winner${
+        s.winnerCount === 1 ? "" : "s"
+      } each paid the ${eth(s.clearingPrice)} ETH clearing price; all excess has been refunded.`;
     if (s.phase === "cancelled")
       return s.refundsComplete
         ? "Cancelled. All remaining bids have been refunded."
@@ -461,11 +470,17 @@ export default function AuctionPage() {
             </span>
           </span>
           <Countdown now={now} startTime={s.startTime} endTime={s.endTime} />
-          {s.extensionCount > 0 && (
+          {now !== 0 && now >= s.endTime ? (
             <span className="font-mono text-micro uppercase tracking-[0.12em] text-faint">
-              extended {s.extensionCount}× / hard end{" "}
-              {fmtDateUTC(s.absoluteEndTime)}
+              ended {fmtDateUTC(s.endTime)}
             </span>
+          ) : (
+            s.extensionCount > 0 && (
+              <span className="font-mono text-micro uppercase tracking-[0.12em] text-faint">
+                extended {s.extensionCount}× / hard end{" "}
+                {fmtDateUTC(s.absoluteEndTime)}
+              </span>
+            )
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -530,11 +545,11 @@ export default function AuctionPage() {
           <div className="flex items-baseline justify-between gap-4">
             <Label>Slots filled</Label>
             <span className="font-serif font-medium text-lg tabular-nums text-foreground leading-none">
-              {s.activeBids}
+              {slotsFilled}
               <span className="text-faint">/{s.maxUnits}</span>
             </span>
           </div>
-          <Meter filled={s.activeBids} total={s.maxUnits} />
+          <Meter filled={slotsFilled} total={s.maxUnits} />
         </div>
 
         {/* Action — place a bid, or the reason you can't right now */}
@@ -865,6 +880,7 @@ export default function AuctionPage() {
         <Standings
           bids={s.allBids}
           won={s.wonBids}
+          over={(now !== 0 && now >= s.endTime) || s.phase !== "active"}
           firstTokenId={s.firstTokenId}
           you={address}
           activeBids={s.activeBids}
