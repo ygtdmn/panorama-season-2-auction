@@ -242,7 +242,7 @@ send_webhook() {
 }
 
 alert() {
-  local message="[panorama-auction] $1"
+  local message="$1"
   printf '%s\n' "$message"
   if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
     send_webhook "$message"
@@ -250,7 +250,7 @@ alert() {
 }
 
 if [[ "$MODE" == "--healthcheck" ]]; then
-  alert "healthcheck OK: RPC reads valid; phase=$PHASE ($PHASE_NAME), bids=$BIDS, liabilities=$LIAB wei."
+  alert "healthcheck OK: RPC reads valid; phase $PHASE_NAME, bids $BIDS, liabilities $(eth_value "$LIAB") ETH."
   ((WEBHOOK_FAILED == 0)) || exit 1
   exit 0
 fi
@@ -323,7 +323,7 @@ if [[ "$MINTING_UNAVAILABLE" == "true" && ("$PHASE" == "0" || "$PHASE" == "1") ]
   alert "CRITICAL: auction ended but minting is unavailable (authorization missing/revoked or cap insufficient). Fix settlement capability; permissionless recovery opens after the seven-day finalize grace."
 fi
 if uint_lt "$BAL" "$LIAB"; then
-  alert "CRITICAL: balance $BAL < liabilities $LIAB (should be impossible; investigate immediately)"
+  alert "CRITICAL: balance $(eth_value "$BAL") ETH < liabilities $(eth_value "$LIAB") ETH (should be impossible; investigate immediately)"
 fi
 if [[ -n "$PREV_END" && "$END" != "$PREV_END" && "$PHASE" == "0" ]]; then
   FORMATTED_END=$(date -u -d "@$END" +%H:%M:%SZ 2>/dev/null || printf '%s' "$END")
