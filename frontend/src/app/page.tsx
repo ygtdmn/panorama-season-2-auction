@@ -910,13 +910,15 @@ export default function AuctionPage() {
   );
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background text-foreground">
+    <div className="min-h-svh flex flex-col bg-background text-foreground">
       <Header />
       <div className="h-16 shrink-0" />
 
       {/* HERO — together with the 64px header offset, the panorama and masthead fill exactly
-          one screen. The image flexes around the text so this remains true on every viewport. */}
-      <section className="w-full h-[calc(100dvh-4rem)] flex flex-col">
+          one screen. The image flexes around the text so this remains true on every viewport.
+          svh, not dvh: dvh re-resolves as the mobile URL bar collapses/expands, resizing the
+          hero mid-scroll and shifting the whole page. */}
+      <section className="w-full h-[calc(100svh-4rem)] flex flex-col">
         <div className="mt-4 md:mt-6 flex-1 min-h-0">
           <HeroPanorama />
         </div>
