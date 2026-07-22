@@ -17,6 +17,9 @@ const CLIENT_RPC_OVERRIDE = ENV.rpcUrl;
 
 const mainnetTransport = fallback([
 	...(TARGET_CHAIN.id === mainnet.id && CLIENT_RPC_OVERRIDE ? [http(CLIENT_RPC_OVERRIDE)] : []),
+	http("https://eth-mainnet.g.alchemy.com/v2/alch_nZeV4lIRQidp0HDWfIsyx"),
+	http("https://ethereum-rpc.publicnode.com"),
+	
 ]);
 
 const sepoliaTransport = fallback([
