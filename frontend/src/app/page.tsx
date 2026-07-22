@@ -78,10 +78,13 @@ function Countdown({
   now,
   startTime,
   endTime,
+  unconfirmed,
 }: {
   now: number;
   startTime: number;
   endTime: number;
+  /** The clock ran out on a snapshot that may predate an extension. */
+  unconfirmed?: boolean;
 }) {
   if (!now)
     return (
@@ -98,7 +101,9 @@ function Countdown({
   const pad = (x: number) => String(x).padStart(2, "0");
   const text =
     left === 0
-      ? "Ended"
+      ? unconfirmed
+        ? "Checking…"
+        : "Ended"
       : left >= 3600
         ? `${d > 0 ? `${d}d ` : ""}${pad(h)}:${pad(m)}:${pad(sec)}`
         : `${pad(m)}:${pad(sec)}`;
@@ -229,6 +234,10 @@ export default function AuctionPage() {
   // The contract stays "active" from deploy until finalize; only startTime→endTime
   // is live. Everything status-shaped (label, dot) reads this, not the raw phase.
   const phaseView = displayPhase(s.phase, now, s.startTime, s.endTime);
+  // A late bid extends endTime in the block it lands. Until a fresh snapshot confirms the end
+  // really stood, "Closed" would be a guess made from data that may predate an extension, which
+  // is exactly what sends people to the reload button. Say "Closing" and keep resyncing instead.
+  const endUnconfirmed = phaseView === "closed" && s.snapshotAgeMs > 12_000;
 
   const [bidInput, setBidInput] = useState("");
   const [raiseInputs, setRaiseInputs] = useState<Record<number, string>>({});
@@ -273,7 +282,19 @@ export default function AuctionPage() {
 	  actions.reset();
 	}
 	if (actions.status === "replaced") {
-	  toast.info("A different replacement transaction confirmed. The auction action was not submitted.");
+	  toast.info(
+		actions.replacementReason
+		  ? "A different replacement transaction confirmed. The auction action was not submitted."
+		  : "Another transaction from your wallet took that one's place. Check Your bids before submitting again.",
+	  );
+	  actions.reset();
+	}
+	if (actions.status === "dropped") {
+	  toast.info(
+		actions.lockReleasedManually
+		  ? "Tracking released. If that transaction still confirms, it counts as a bid."
+		  : "That transaction left the network without confirming. Nothing was submitted, so you can bid again.",
+	  );
 	  actions.reset();
 	}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,7 +413,9 @@ export default function AuctionPage() {
     if (s.paused) return "Bidding is paused.";
     if (now !== 0 && now < s.startTime) return "Bidding opens soon.";
     if (now !== 0 && now >= s.endTime)
-      return "Bidding closed. Awaiting settlement.";
+      return endUnconfirmed
+        ? "The clock ran out. Checking whether a late bid extended the auction."
+        : "Bidding closed. Awaiting settlement.";
     return "";
   })();
 
@@ -465,13 +488,20 @@ export default function AuctionPage() {
           <span className="inline-flex items-center gap-2">
             <LiveDot phase={phaseView} />
             <span className="font-mono text-micro uppercase tracking-[0.2em] text-muted">
-              {PHASE_COPY[phaseView]}
+              {endUnconfirmed ? "Closing" : PHASE_COPY[phaseView]}
             </span>
           </span>
-          <Countdown now={now} startTime={s.startTime} endTime={s.endTime} />
+          <Countdown
+            now={now}
+            startTime={s.startTime}
+            endTime={s.endTime}
+            unconfirmed={endUnconfirmed}
+          />
           {now !== 0 && now >= s.endTime ? (
             <span className="font-mono text-micro uppercase tracking-[0.12em] text-faint">
-              ended {fmtDateUTC(s.endTime)}
+              {endUnconfirmed
+                ? "confirming whether a late bid extended it"
+                : `ended ${fmtDateUTC(s.endTime)}`}
             </span>
           ) : (
             s.extensionCount > 0 && (
@@ -656,6 +686,7 @@ export default function AuctionPage() {
 					    s.yourBidCount === 0
 						  ? "place bid"
 						  : `place ${["2nd", "3rd", "4th"][s.yourBidCount - 1]} bid`,
+					    unsafeSnapshot,
 					  )}
                 </button>
               )}
@@ -767,6 +798,7 @@ export default function AuctionPage() {
 								raiseWei !== null && raiseWei > 0n
 								  ? `raise to ${eth(b.amount + raiseWei)}`
 								  : "raise",
+								unsafeSnapshot,
 							  )}
                       </button>
 					{raiseInvalid && (

@@ -48,6 +48,35 @@ const ERROR_COPY: Record<string, (args: readonly unknown[]) => string> = {
 	InvalidConfig: () => "Invalid configuration.",
 };
 
+/**
+ * Wallet-side failures viem cannot classify all arrive as one generic sentence
+ * ("Transaction creation failed.") with the real reason buried in `details`/`cause`. These are
+ * the ones bidders actually hit, so they get an answer they can act on.
+ */
+function describeWalletFailure(text: string): string | null {
+	if (/insufficient funds/i.test(text)) {
+		return "Not enough ETH for the bid plus gas in this wallet.";
+	}
+	if (/(gas required exceeds|cannot estimate gas|unpredictable gas|execution reverted|always failing)/i.test(text)) {
+		// The simulation passed a moment earlier, so this is nearly always a bid that was
+		// outbid between the preview and the wallet signing screen.
+		return "The minimum moved before your wallet sent this. Re-check the minimum and bid again.";
+	}
+	if (/replacement transaction underpriced|already known|nonce too low/i.test(text)) {
+		return "Your wallet still has an earlier transaction for this nonce. Wait for it or speed it up in the wallet.";
+	}
+	if (/chain (id )?mismatch|wrong network|unsupported chain/i.test(text)) {
+		return "Your wallet is on the wrong network. Switch to Ethereum mainnet and try again.";
+	}
+	if (/intrinsic gas too low|max fee per gas|fee cap|underpriced/i.test(text)) {
+		return "Your wallet's gas settings were rejected by the network. Retry with the wallet's default fees.";
+	}
+	if (/timeout|timed out|network (error|request failed)|failed to fetch|load failed/i.test(text)) {
+		return "Your wallet could not reach the network. Check your connection and try again.";
+	}
+	return null;
+}
+
 function isUserRejection(err: unknown): boolean {
 	if (err instanceof BaseError) {
 		if (err.walk((e) => e instanceof UserRejectedRequestError)) return true;
@@ -82,10 +111,30 @@ export function describeAuctionError(err: unknown): string | null {
 			if (revert.reason) return revert.reason;
 			if (name) return `Transaction reverted: ${name}.`;
 		}
-		// Fall back to viem's concise summary, first line only.
-		return err.shortMessage.split("\n")[0].slice(0, 200);
+		// No decoded revert: the wallet or its node refused the send. Read the reason out of
+		// details/metaMessages/cause before falling back to viem's generic summary, which on its
+		// own ("Transaction creation failed.") tells a bidder nothing they can act on.
+		const detail = [
+			err.details,
+			err.shortMessage,
+			err.metaMessages?.join(" "),
+			(err.cause as { message?: string } | undefined)?.message,
+			err.message,
+		]
+			.filter(Boolean)
+			.join(" ");
+		const walletCopy = describeWalletFailure(detail);
+		if (walletCopy) return walletCopy;
+		const short = err.shortMessage.split("\n")[0].trim();
+		// Keep the wallet's own words when viem's summary carries no information.
+		if (/^transaction creation failed\.?$/i.test(short) && err.details) {
+			return `Your wallet refused the transaction: ${err.details.split("\n")[0].slice(0, 150)}`;
+		}
+		return short.slice(0, 200);
 	}
 
 	const msg = err instanceof Error ? err.message : String(err);
+	const walletCopy = describeWalletFailure(msg);
+	if (walletCopy) return walletCopy;
 	return msg.split("\n")[0].slice(0, 200);
 }

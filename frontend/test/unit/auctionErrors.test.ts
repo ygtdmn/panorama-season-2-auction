@@ -74,3 +74,37 @@ describe("describeAuctionError", () => {
 		expect(describeAuctionError(undefined)).toBeNull();
 	});
 });
+
+describe("wallet-side send failures", () => {
+	// viem wraps anything the wallet refuses in one generic sentence; the reason lives in details.
+	function walletError(details: string): BaseError {
+		const err = new BaseError("Transaction creation failed.", { details });
+		return err;
+	}
+
+	it("explains a lost race instead of the generic wrapper", () => {
+		expect(describeAuctionError(walletError("execution reverted"))).toBe(
+			"The minimum moved before your wallet sent this. Re-check the minimum and bid again.",
+		);
+		expect(describeAuctionError(walletError("cannot estimate gas; transaction may fail"))).toBe(
+			"The minimum moved before your wallet sent this. Re-check the minimum and bid again.",
+		);
+	});
+
+	it("names the common wallet refusals", () => {
+		expect(describeAuctionError(walletError("insufficient funds for gas * price + value"))).toBe(
+			"Not enough ETH for the bid plus gas in this wallet.",
+		);
+		expect(describeAuctionError(walletError("nonce too low"))).toContain("earlier transaction");
+		expect(describeAuctionError(walletError("Failed to fetch"))).toContain("could not reach the network");
+	});
+
+	it("falls back to the wallet's own words, never to the bare wrapper", () => {
+		const msg = describeAuctionError(walletError("Provider disconnected while signing"));
+		expect(msg).toBe("Your wallet refused the transaction: Provider disconnected while signing");
+	});
+
+	it("still returns null for a user rejection", () => {
+		expect(describeAuctionError(new UserRejectedRequestError(new Error("denied")))).toBeNull();
+	});
+});

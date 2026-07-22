@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
-import type { Hash, TransactionReceipt } from "viem";
+import {
+	TransactionNotFoundError,
+	TransactionReceiptNotFoundError,
+	type Hash,
+	type TransactionReceipt,
+} from "viem";
 import { TARGET_CHAIN } from "@/lib/wagmi";
 import { panoramaAuctionAbi } from "@/lib/abis/panoramaAuction";
 import { PANORAMA_AUCTION_ADDRESS } from "@/lib/constants";
@@ -45,6 +50,15 @@ export interface AuctionActions {
 	unresolved: boolean;
 	/** False only during the one-time local pending-transaction restore. */
 	trackerReady: boolean;
+	/** Epoch ms the wallet returned the hash, for "how long has this been unresolved" copy. */
+	submittedAt?: number;
+	/**
+	 * Releases an indeterminate transaction by hand. Last resort for the case no probe can
+	 * settle (an RPC that can neither produce a receipt nor admit the transaction is gone).
+	 */
+	forceUnlock: () => void;
+	/** True when the current terminal state came from `forceUnlock`, not from chain evidence. */
+	lockReleasedManually: boolean;
 	wrongChain: boolean;
 	switching: boolean;
 	switchToTargetChain: () => void;
@@ -66,6 +80,14 @@ export interface AuctionActions {
 const RECEIPT_UNKNOWN_AFTER_MS = 60_000;
 const RECEIPT_WAIT_SLICE_MS = 30_000;
 const RECEIPT_RETRY_DELAY_MS = 3_000;
+// The presence prober runs beside the receipt watcher and answers a different question: is this
+// transaction still on the network at all? It only starts once a transaction has had time to
+// propagate, and only concludes after several consecutive "no such transaction" answers, so a
+// single lagging RPC in the fallback list can never unlock the form on its own.
+const PROBE_INTERVAL_MS = 6_000;
+const PROBE_START_AFTER_MS = 20_000;
+const PROBE_MISSES_WITH_NONCE = 3;
+const PROBE_MISSES_WITHOUT_NONCE = 6;
 // Pending records are scoped per wallet: wallet B must never be locked by (or toast for)
 // wallet A's unresolved transaction. The unscoped prefix is also the pre-scoping legacy key.
 const PENDING_STORAGE_PREFIX = `panorama-auction:pending:${TARGET_CHAIN.id}:${PANORAMA_AUCTION_ADDRESS.toLowerCase()}`;
@@ -75,6 +97,18 @@ function pendingStorageKey(account: `0x${string}`): string {
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * True only when the RPC positively answered "I have no such transaction/receipt". A transport
+ * failure, a rate limit, or any other error proves nothing and must never count as absence.
+ */
+function isNotFoundError(error: unknown): boolean {
+	if (error instanceof TransactionNotFoundError || error instanceof TransactionReceiptNotFoundError) {
+		return true;
+	}
+	const name = (error as { name?: string } | null)?.name;
+	return name === "TransactionNotFoundError" || name === "TransactionReceiptNotFoundError";
 }
 
 function revertedError(): Error {
@@ -107,6 +141,8 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 	// after an account switch where the previous wallet's tracker is still in memory.
 	const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 	const notifiedHashRef = useRef<Hash | undefined>(undefined);
+	// Mirrored in a ref so learning the nonce mid-flight does not restart the watcher loops.
+	const nonceRef = useRef<number | undefined>(undefined);
 
 	const wrongChain = chainId !== TARGET_CHAIN.id;
 	const trackerReady = hydratedFor === (address ?? "disconnected");
@@ -160,6 +196,10 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 	useEffect(() => {
 		writeLockRef.current = isTransactionUnresolved(tracker.status);
 	}, [tracker.status]);
+
+	useEffect(() => {
+		nonceRef.current = tracker.nonce;
+	}, [tracker.nonce]);
 
 	// Receipt reconciliation deliberately uses viem directly. Wagmi's wrapper turns a finite
 	// timeout into a terminal query error; here timeouts are only an observability state.
@@ -238,6 +278,107 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 		trackerReady,
 	]);
 
+	// Presence prober. The receipt watcher above can only ever resolve a transaction that mines;
+	// a dropped transaction, or one whose nonce a wallet-side speed-up/cancel consumed after a
+	// reload (viem can no longer arm replacement detection then), produces no receipt ever and
+	// used to lock the form permanently. This resolves those two cases from evidence:
+	//   nonce consumed by something else + no receipt for our hash -> our action did not execute
+	//   nonce still free + the network does not know the hash      -> dropped, never mined
+	// A resend reuses the same nonce, so at most one of the two can ever land.
+	useEffect(() => {
+		if (!trackerReady || !publicClient || !tracker.originalHash || !tracker.account) return;
+		if (!isTransactionUnresolved(tracker.status)) return;
+
+		const account = tracker.account;
+		const originalHash = tracker.originalHash;
+		const currentHash = tracker.currentHash ?? originalHash;
+		const submittedAt = tracker.submittedAt ?? Date.now();
+		let stopped = false;
+		let misses = 0;
+
+		const receiptFor = async (hash: Hash): Promise<TransactionReceipt | null> => {
+			try {
+				return await publicClient.getTransactionReceipt({ hash });
+			} catch {
+				return null;
+			}
+		};
+
+		const probe = async () => {
+			if (Date.now() - submittedAt < PROBE_START_AFTER_MS) return;
+
+			// Receipt truth always wins over any absence evidence.
+			const receipt =
+				(await receiptFor(currentHash)) ??
+				(currentHash === originalHash ? null : await receiptFor(originalHash));
+			if (stopped) return;
+			if (receipt) {
+				writeLockRef.current = false;
+				dispatch({
+					type: "receipt",
+					receiptStatus: receipt.status,
+					error: receipt.status === "reverted" ? revertedError() : undefined,
+				});
+				return;
+			}
+
+			let known = false;
+			try {
+				const tx = await publicClient.getTransaction({ hash: currentHash });
+				known = true;
+				if (nonceRef.current === undefined && typeof tx.nonce === "number") {
+					nonceRef.current = tx.nonce;
+					dispatch({ type: "nonce", nonce: tx.nonce });
+				}
+			} catch (error) {
+				// Only a definitive "not found" counts; anything else is an unusable answer.
+				if (!isNotFoundError(error)) return;
+			}
+			if (stopped) return;
+			if (known) {
+				misses = 0;
+				return;
+			}
+
+			misses += 1;
+			const nonce = nonceRef.current;
+			if (nonce !== undefined) {
+				let confirmedNonce: number;
+				try {
+					confirmedNonce = await publicClient.getTransactionCount({
+						address: account,
+						blockTag: "latest",
+					});
+				} catch {
+					return;
+				}
+				if (stopped) return;
+				if (confirmedNonce > nonce) {
+					dispatch({ type: "vanished", kind: "replaced" });
+					return;
+				}
+				if (misses >= PROBE_MISSES_WITH_NONCE) dispatch({ type: "vanished", kind: "dropped" });
+				return;
+			}
+			if (misses >= PROBE_MISSES_WITHOUT_NONCE) dispatch({ type: "vanished", kind: "dropped" });
+		};
+
+		const timer = window.setInterval(() => void probe(), PROBE_INTERVAL_MS);
+		void probe();
+		return () => {
+			stopped = true;
+			window.clearInterval(timer);
+		};
+	}, [
+		publicClient,
+		tracker.account,
+		tracker.currentHash,
+		tracker.originalHash,
+		tracker.status,
+		tracker.submittedAt,
+		trackerReady,
+	]);
+
 	useEffect(() => {
 		if (tracker.status !== "success" || !tracker.currentHash) return;
 		if (notifiedHashRef.current === tracker.currentHash) return;
@@ -248,6 +389,15 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 	const switchToTargetChain = useCallback(() => {
 		switchChain({ chainId: TARGET_CHAIN.id });
 	}, [switchChain]);
+
+	// Manual release. Deliberately not wired to `reset()`: it stays a separate, explicitly
+	// confirmed action so no ordinary status handler can clear an unresolved transaction.
+	const forceUnlock = useCallback(() => {
+		if (!isTransactionUnresolved(tracker.status)) return;
+		writeLockRef.current = false;
+		writer.reset();
+		dispatch({ type: "vanished", kind: "dropped", forced: true });
+	}, [tracker.status, writer]);
 
 	const reset = useCallback(() => {
 		if (isTransactionUnresolved(tracker.status)) return;
@@ -287,6 +437,20 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const hash = await writer.writeContractAsync(params as any);
 				dispatch({ type: "submitted", hash, submittedAt: Date.now() });
+				// Best effort, while the transaction is certainly still in the mempool: the nonce is
+				// what later proves whether a missing transaction was replaced or simply dropped.
+				void (async () => {
+					for (let attempt = 0; attempt < 3; attempt++) {
+						try {
+							const tx = await publicClient.getTransaction({ hash });
+							nonceRef.current = tx.nonce;
+							dispatch({ type: "nonce", nonce: tx.nonce });
+							return;
+						} catch {
+							await sleep(1_000);
+						}
+					}
+				})();
 			} catch (error) {
 				writeLockRef.current = false;
 				dispatch({ type: "preflight-error", error: error as Error });
@@ -314,6 +478,9 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 			error: tracker.error,
 			unresolved,
 			trackerReady,
+			submittedAt: tracker.submittedAt,
+			forceUnlock,
+			lockReleasedManually: tracker.forcedUnlock === true,
 			wrongChain,
 			switching,
 			switchToTargetChain,
@@ -338,6 +505,7 @@ export function useAuctionActions(onSuccess?: () => void): AuctionActions {
 			tracker,
 			unresolved,
 			trackerReady,
+			forceUnlock,
 			wrongChain,
 			switching,
 			switchToTargetChain,

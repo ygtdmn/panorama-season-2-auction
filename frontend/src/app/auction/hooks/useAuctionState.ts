@@ -66,6 +66,8 @@ export interface AuctionState {
 	/** Connected-account reads are part of the action-safety snapshot. */
 	accountReady: boolean;
 	accountReadFailed: boolean;
+	/** Age of the newest complete snapshot in ms (Infinity until the first one lands). */
+	snapshotAgeMs: number;
 	refetch: () => void;
 
 	/** Latest block time anchor for chain-clock derivation (undefined until the first block). */
@@ -233,6 +235,11 @@ export function useAuctionState(): AuctionState {
 	}, [enabled]);
 	const globalReady = g !== undefined;
 	const accountReady = !address || a !== undefined;
+	// Oldest half of the snapshot decides its age: the account reads are part of bid safety.
+	const lastSyncedAt =
+		address && account.dataUpdatedAt
+			? Math.min(global.dataUpdatedAt, account.dataUpdatedAt)
+			: global.dataUpdatedAt;
 	const globalStale = globalReady && healthNow - global.dataUpdatedAt > SNAPSHOT_STALE_MS;
 	const accountStale =
 		!!address && accountReady && healthNow - account.dataUpdatedAt > SNAPSHOT_STALE_MS;
@@ -290,6 +297,44 @@ export function useAuctionState(): AuctionState {
 		if (!enabled) return;
 		if (globalStale || accountStale || blockStale) refetchRef.current();
 	}, [enabled, globalStale, accountStale, blockStale, healthNow]);
+
+	// Mobile browsers freeze timers in a backgrounded tab, so the poll and the 5s health tick
+	// both stop. Resync the instant the page is looked at again (or the network returns) instead
+	// of showing whatever the snapshot said minutes ago.
+	useEffect(() => {
+		if (!enabled) return;
+		const resync = () => {
+			if (document.visibilityState !== "hidden") refetchRef.current();
+		};
+		document.addEventListener("visibilitychange", resync);
+		window.addEventListener("focus", resync);
+		window.addEventListener("online", resync);
+		return () => {
+			document.removeEventListener("visibilitychange", resync);
+			window.removeEventListener("focus", resync);
+			window.removeEventListener("online", resync);
+		};
+	}, [enabled]);
+
+	// Anti-snipe moves endTime in the same block a late bid lands. A viewer holding a snapshot
+	// from before that bid counts down to zero and is told the auction closed, and only a manual
+	// refresh reveals the extension. Poll hard across that boundary so the extension arrives on
+	// its own. Bounded: once the end really has passed by five minutes, no extension is coming.
+	// The 5s health tick supplies the local time, so this stays a pure render-time derivation.
+	const chainNowApprox = chainTime
+		? chainTime.timestamp + Math.floor((healthNow - chainTime.atMs) / 1000)
+		: 0;
+	const endCrossing =
+		enabled &&
+		phase === "active" &&
+		endTime > 0 &&
+		chainNowApprox >= endTime - 15 &&
+		chainNowApprox <= endTime + 300;
+	useEffect(() => {
+		if (!endCrossing) return;
+		const timer = window.setInterval(() => refetchRef.current(), 3_000);
+		return () => window.clearInterval(timer);
+	}, [endCrossing, endTime]);
 
 	const owner = g?.[16] as `0x${string}` | undefined;
 	const isOwner = !!(address && owner && isAddressEqual(address, owner));
@@ -410,6 +455,7 @@ export function useAuctionState(): AuctionState {
 		degradedPersistent,
 		accountReady,
 		accountReadFailed: !!address && account.isError && !accountReady,
+		snapshotAgeMs: lastSyncedAt > 0 ? Math.max(0, healthNow - lastSyncedAt) : Infinity,
 		refetch: () => refetchRef.current(),
 
 		chainTime,

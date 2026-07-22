@@ -83,6 +83,49 @@ describe("auction transaction tracking", () => {
 		}
 	});
 
+	it("unlocks a transaction that vanished from the network", () => {
+		const delayed = transactionTrackerReducer(submitted(), { type: "delayed" });
+		const dropped = transactionTrackerReducer(delayed, { type: "vanished", kind: "dropped" });
+		expect(dropped.status).toBe("dropped");
+		expect(isTransactionUnresolved(dropped.status)).toBe(false);
+		expect(dropped.error).toBeNull();
+
+		const replacedOut = transactionTrackerReducer(delayed, { type: "vanished", kind: "replaced" });
+		expect(replacedOut.status).toBe("replaced");
+		expect(isTransactionUnresolved(replacedOut.status)).toBe(false);
+	});
+
+	it("never lets a vanish verdict overwrite a settled outcome", () => {
+		const mined = transactionTrackerReducer(submitted(), {
+			type: "receipt",
+			receiptStatus: "success",
+		});
+		expect(transactionTrackerReducer(mined, { type: "vanished", kind: "dropped" })).toEqual(mined);
+	});
+
+	it("marks a manual release so the copy cannot claim proof it does not have", () => {
+		const delayed = transactionTrackerReducer(submitted(), { type: "delayed" });
+		const forced = transactionTrackerReducer(delayed, {
+			type: "vanished",
+			kind: "dropped",
+			forced: true,
+		});
+		expect(forced.forcedUnlock).toBe(true);
+		const automatic = transactionTrackerReducer(delayed, { type: "vanished", kind: "dropped" });
+		expect(automatic.forcedUnlock).toBeUndefined();
+	});
+
+	it("round-trips the nonce so a reload can still tell dropped from replaced", () => {
+		const withNonce = transactionTrackerReducer(submitted(), { type: "nonce", nonce: 7 });
+		expect(withNonce.nonce).toBe(7);
+		const persisted = persistableTransaction(withNonce);
+		expect(persisted?.nonce).toBe(7);
+		expect(hydratePersistedTransaction(persisted, account)?.nonce).toBe(7);
+		expect(
+			hydratePersistedTransaction({ ...persisted, nonce: "7" }, account)?.nonce,
+		).toBeUndefined();
+	});
+
 	it("rejects malformed persisted data", () => {
 		expect(hydratePersistedTransaction({ version: 1, originalHash: "0x1" })).toBeNull();
 	});

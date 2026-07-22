@@ -98,7 +98,19 @@ export default function RecoveryPage() {
 			actions.reset();
 		}
 		if (actions.status === "replaced") {
-			toast.info("A different replacement transaction confirmed. No recovery action was submitted.");
+			toast.info(
+				actions.replacementReason
+					? "A different replacement transaction confirmed. No recovery action was submitted."
+					: "Another transaction from your wallet took that one's place. Re-check the state before retrying.",
+			);
+			actions.reset();
+		}
+		if (actions.status === "dropped") {
+			toast.info(
+				actions.lockReleasedManually
+					? "Tracking released. If that transaction still confirms, it still executes."
+					: "That transaction left the network without confirming. Nothing was submitted; retry when ready.",
+			);
 			actions.reset();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

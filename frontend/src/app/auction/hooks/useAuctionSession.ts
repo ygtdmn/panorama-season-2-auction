@@ -114,6 +114,7 @@ function deriveState(s: DemoSnapshot): AuctionState {
 		degradedPersistent: false,
 		accountReady: true,
 		accountReadFailed: false,
+		snapshotAgeMs: 0,
 		refetch: () => {},
     chainTime: { timestamp: nowSec, atMs: Date.now() },
     phase: PHASES[s.phase],
@@ -191,6 +192,10 @@ function deriveActions(s: DemoSnapshot): AuctionActions {
 		error: s.actionError ? new Error(s.actionError) : null,
 		unresolved: false,
 		trackerReady: true,
+		submittedAt: undefined,
+		// The simulation resolves every action synchronously, so nothing can ever be indeterminate.
+		forceUnlock: () => {},
+		lockReleasedManually: false,
     wrongChain: false,
     switching: false,
     switchToTargetChain: () => {},

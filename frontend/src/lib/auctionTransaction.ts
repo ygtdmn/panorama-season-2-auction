@@ -10,7 +10,8 @@ export type TransactionStatus =
 	| "success"
 	| "error"
 	| "cancelled"
-	| "replaced";
+	| "replaced"
+	| "dropped";
 
 export interface TransactionTracker<Action extends string = string> {
 	status: TransactionStatus;
@@ -20,7 +21,11 @@ export interface TransactionTracker<Action extends string = string> {
 	currentHash?: Hash;
 	replacementHash?: Hash;
 	replacementReason?: ReplacementReason;
+	/** Sender nonce of the submitted transaction, once the RPC has shown it to us. */
+	nonce?: number;
 	submittedAt?: number;
+	/** Set when the operator released the lock by hand instead of the chain resolving it. */
+	forcedUnlock?: boolean;
 	error: Error | null;
 }
 
@@ -29,6 +34,8 @@ export type TransactionTrackerEvent<Action extends string = string> =
 	| { type: "submitted"; hash: Hash; submittedAt: number }
 	| { type: "delayed" }
 	| { type: "replacement"; hash: Hash; reason: ReplacementReason }
+	| { type: "nonce"; nonce: number }
+	| { type: "vanished"; kind: "dropped" | "replaced"; forced?: boolean }
 	| { type: "receipt"; receiptStatus: TransactionReceipt["status"]; error?: Error }
 	| { type: "preflight-error"; error: Error }
 	| { type: "wait-error"; error: Error }
@@ -79,6 +86,19 @@ export function transactionTrackerReducer<Action extends string>(
 				replacementHash: event.hash,
 				replacementReason: event.reason,
 			};
+		case "nonce":
+			return state.nonce === event.nonce ? state : { ...state, nonce: event.nonce };
+		case "vanished":
+			// The transaction left the network without a receipt: either it was dropped from the
+			// mempool, or its nonce was consumed by a different transaction. Neither can mine the
+			// original action any more, so the form unlocks instead of staying locked forever.
+			if (!isTransactionUnresolved(state.status)) return state;
+			return {
+				...state,
+				status: event.kind === "replaced" ? "replaced" : "dropped",
+				forcedUnlock: event.forced ? true : undefined,
+				error: null,
+			};
 		case "receipt": {
 			// A wallet cancellation or a different replacement transaction confirms that the
 			// original auction action did not execute. A fee-only reprice still did.
@@ -119,6 +139,7 @@ export interface PersistedTransaction<Action extends string = string> {
 	currentHash: Hash;
 	replacementHash?: Hash;
 	replacementReason?: ReplacementReason;
+	nonce?: number;
 	submittedAt: number;
 }
 
@@ -143,6 +164,7 @@ export function persistableTransaction<Action extends string>(
 		currentHash: tracker.currentHash,
 		replacementHash: tracker.replacementHash,
 		replacementReason: tracker.replacementReason,
+		nonce: tracker.nonce,
 		submittedAt: tracker.submittedAt,
 	};
 }
@@ -180,6 +202,7 @@ export function hydratePersistedTransaction<Action extends string>(
 		currentHash: p.currentHash as Hash,
 		replacementHash: p.replacementHash as Hash | undefined,
 		replacementReason: p.replacementReason,
+		nonce: typeof p.nonce === "number" && Number.isInteger(p.nonce) && p.nonce >= 0 ? p.nonce : undefined,
 		submittedAt: p.submittedAt,
 		error: null,
 	};
