@@ -85,7 +85,7 @@ function Countdown({
 }) {
   if (!now)
     return (
-      <span className="font-serif text-xl tabular-nums text-faint">··:··</span>
+      <span className="font-serif text-xl tabular-nums text-faint">··:··:··</span>
     );
   // Before the sale opens, count down to the start; after, to the end.
   const preStart = now < startTime;
@@ -96,12 +96,11 @@ function Countdown({
   const m = Math.floor((left % 3600) / 60);
   const sec = left % 60;
   const pad = (x: number) => String(x).padStart(2, "0");
-  // Drop the churning seconds until the final hour.
   const text =
     left === 0
       ? "Ended"
       : left >= 3600
-        ? `${d > 0 ? `${d}d ` : ""}${pad(h)}:${pad(m)}`
+        ? `${d > 0 ? `${d}d ` : ""}${pad(h)}:${pad(m)}:${pad(sec)}`
         : `${pad(m)}:${pad(sec)}`;
   return (
     <span className="font-serif font-medium text-xl tabular-nums tracking-[-0.01em] text-foreground leading-none">
