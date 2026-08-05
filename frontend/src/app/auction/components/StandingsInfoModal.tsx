@@ -17,7 +17,7 @@ const STEPS: { n: string; t: string; d: string }[] = [
 	{
 		n: "03",
 		t: "Higher bids reveal first",
-		d: "Rank sets reveal order. The highest bid takes #1 and reveals on day one; each rank down reveals a day later, one painting per day.",
+		d: "Rank sets reveal order. The highest bid takes #1 and reveals on day one; each rank down reveals a day later, one segment per day.",
 	},
 	{
 		n: "04",

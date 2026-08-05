@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { CDN_BASE_URL } from "@/lib/constants";
 
-// Demo header: five paintings in the new Season 2 art style, shown as one scrollable strip so
+// Demo header: five segments in the new Season 2 art style, shown as one scrollable strip so
 // people can get a feel for the work. Served from the CDN.
 const IMAGES = [1, 2, 3, 4, 5].map(
 	(n) => `${CDN_BASE_URL}/season2/header/${n}.webp`,
@@ -74,7 +74,7 @@ export function HeroPanorama() {
 						<img
 							key={url}
 							src={url}
-							alt={i === 0 ? "A Panorama Season 2 painting" : ""}
+							alt={i === 0 ? "A Panorama Season 2 segment" : ""}
 							draggable={false}
 							loading={i < 2 ? "eager" : "lazy"}
 							className="block h-full w-auto pointer-events-none"

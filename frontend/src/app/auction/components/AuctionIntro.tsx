@@ -86,7 +86,7 @@ export function AuctionIntro({
 			q: "What is Panorama?",
 			a: (
 				<>
-					An autonomous painting system by <Yigit />. It reads live market data and paints
+					An autonomous art system by <Yigit />. It reads live market data and generates
 					continuously: when the price of $PANO climbs the work brightens toward triumph, and when it
 					falls it darkens toward ruin. The system composes each image; the artist curates and
 					approves every one.
@@ -95,7 +95,7 @@ export function AuctionIntro({
 		},
 		{
 			q: "What was Season 1?",
-			a: "The first ninety paintings. One arrived each day and seamlessly extended the last, until the horizon became a single continuous panorama. Its subject was myth, and its mood was set entirely by the market.",
+			a: "The first ninety segments. One arrived each day and seamlessly extended the last, until the horizon became a single continuous panorama. Its subject was myth, and its mood was set entirely by the market.",
 		},
 		{
 			q: "What am I bidding on?",
@@ -122,7 +122,7 @@ export function AuctionIntro({
 		},
 		{
 			q: "Can I bid on more than one?",
-			a: "Yes. A wallet can hold up to four separate bids and win up to four paintings. Raise any of them at any time.",
+			a: "Yes. A wallet can hold up to four separate bids and win up to four segments. Raise any of them at any time.",
 		},
 		{
 			q: "When does bidding end?",
@@ -133,8 +133,8 @@ export function AuctionIntro({
 			a: `The reserve is ${reserve} ETH. Once all ninety slots are full, a new bid has to beat the lowest winning bid by at least ${incrementPct}%.`,
 		},
 		{
-			q: "How do I get my painting?",
-			a: "Winners are minted after the auction is settled. Each painting then reveals on its scheduled day, one per day, in bid order.",
+			q: "How do I get my segment?",
+			a: "Winners are minted after the auction is settled. Each segment then reveals on its scheduled day, one per day, in bid order.",
 		},
 		{
 			q: "Is my ETH safe if something goes wrong?",
@@ -182,13 +182,13 @@ export function AuctionIntro({
 				<Row title="The work">
 					<div className="flex flex-col gap-5 font-sans text-base text-muted leading-relaxed">
 						<p>
-							Panorama is an autonomous painting system by <Yigit />. It turns live market data into a
+							Panorama is an autonomous art system by <Yigit />. It turns live market data into a
 							continuous body of work, composing every image while the artist curates and approves the
 							ones that ship.
 						</p>
 						<p>
 							Season Two, made with <Delta />, traces humankind&apos;s journey from the Stone Age to
-							artificial intelligence. Each painting connects to the next in a continuous tapestry of
+							artificial intelligence. Each segment connects to the next in a continuous tapestry of
 							history, following the tools, discoveries, and inventions that shaped civilization.
 						</p>
 						<p>
@@ -202,10 +202,10 @@ export function AuctionIntro({
 				{/* The sale — what it is, then how it works, in one panel. */}
 				<Row title="The sale">
 					<p className="font-sans text-base text-muted leading-relaxed">
-						All ninety Season 2 paintings are sold at once, at a single price. You bid the most you
+						All ninety Season 2 segments are sold at once, at a single price. You bid the most you
 						would pay; the ninety highest bids win; and every winner pays the same amount, the
 						ninetieth-highest bid. Anything you bid above it comes back when the sale settles. Winners
-						are minted after settlement, and each painting reveals on its own day, highest bid first.
+						are minted after settlement, and each segment reveals on its own day, highest bid first.
 					</p>
 					<ol className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
 						{[

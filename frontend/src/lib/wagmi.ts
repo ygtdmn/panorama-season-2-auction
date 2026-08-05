@@ -61,7 +61,7 @@ export const config = createConfig({
 						metadata: {
 							name: "Panorama Season 2 Auction",
 							description:
-								"Bid on Season 2 of Panorama, an autonomous generative painting.",
+								"Bid on Season 2 of Panorama, an autonomous generative artwork.",
 							url: AUCTION_SITE_URL,
 							icons: [`${CDN_BASE_URL}/prereveal.webp`],
 						},

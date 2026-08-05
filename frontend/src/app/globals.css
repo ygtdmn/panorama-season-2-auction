@@ -381,9 +381,8 @@ body.is-scrubbing .app-tooltip { display: none; }
 	}
 }
 
-/* Slim mono range slider for the painting-pane settings popover. Track is
-   a thin line in --line, thumb is a small foreground square so it reads
-   like the rest of the terminal panes. */
+/* Slim mono range slider. Track is a thin line in --line, thumb is a small
+   foreground square so it reads like the rest of the terminal panes. */
 .terminal-range {
 	-webkit-appearance: none;
 	appearance: none;

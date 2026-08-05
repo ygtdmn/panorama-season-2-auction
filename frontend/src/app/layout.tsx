@@ -21,7 +21,7 @@ const hanken = Hanken_Grotesk({
 });
 
 const description =
-	"Bid on Season 2 of Panorama, an autonomous generative painting. A collaboration between Yigit Duman and DeltaSauce.";
+	"Bid on Season 2 of Panorama, an autonomous generative artwork. A collaboration between Yigit Duman and DeltaSauce.";
 
 export const metadata: Metadata = {
 	metadataBase: new URL(AUCTION_SITE_URL),

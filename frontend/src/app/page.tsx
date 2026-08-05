@@ -963,7 +963,7 @@ export default function AuctionPage() {
             <div className="mt-6 lg:mt-0">
               <p className="font-sans text-muted leading-relaxed text-pretty max-w-[62ch] text-[clamp(1rem,0.94rem+0.3vw,1.2rem)]">
                 Panorama, in its second season, traces humanity&apos;s journey from the Stone Age
-                through artificial intelligence. Across ninety connected paintings, it follows
+                through artificial intelligence. Across ninety connected segments, it follows
                 inventions that shaped civilization and choices still shaping our future.
               </p>
               {/* Scroll cue as a quiet control: muted arrow + label, brightens and nudges on hover. */}
