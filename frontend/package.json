@@ -14,33 +14,39 @@
     "audit:prod": "node scripts/audit-prod.mjs"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.91.0",
-    "next": "16.2.11",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-icons": "^5.6.0",
-    "viem": "2.55.0",
-    "wagmi": "3.7.1"
+    "@tanstack/react-query": "^5.104.5",
+    "next": "16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-icons": "^5.7.0",
+    "viem": "2.57.8",
+    "wagmi": "3.7.9"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.5",
-    "@playwright/test": "^1.58.0",
-    "@tailwindcss/postcss": "^4.2.1",
-    "@types/node": "^20",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.11",
-    "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "16.4.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   },
   "pnpm": {
     "overrides": {
       "ws": ">=8.21.0",
-      "postcss": ">=8.5.10",
-      "sharp": ">=0.35.0"
+      "postcss@<8.5.23": "^8.5.23",
+      "sharp@<0.35.5": "^0.35.5"
     }
   },
-  "packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
+  "packageManager": "pnpm@10.34.7+sha512.ba98abc585539933375b5971f4bc6d6c73a1b4b7edc4a879e7d102fe5423d1e02309d67c60a11f04955093a96e521ad9c3b138cdd654ca5be563f378b3ae48bd",
+  "depsCheck": {
+    "hold": {
+      "@types/node": "24, the Node version Vercel runs (project setting 24.x)",
+      "typescript": "6.0, the newest typescript-eslint (Next's lint) supports; 7 has no JS API"
+    }
+  }
 }
