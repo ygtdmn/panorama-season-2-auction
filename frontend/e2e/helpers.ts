@@ -77,20 +77,48 @@ const nftAdminAbi = parseAbi([
 
 const hex = (v: bigint) => "0x" + v.toString(16);
 
-/** Place a bid from any address by impersonation (no keys needed for bot wallets). */
-export async function placeBidRaw(auction: `0x${string}`, from: `0x${string}`, valueWei: bigint, opts?: { gasPriceGwei?: number }) {
+/**
+ * Send a transaction from an unlocked or impersonated account and wait until it is mined.
+ * anvil's automine answers eth_sendTransaction before the block exists, so a test that
+ * warps time right after a send could otherwise mine the send after the warp (a bid then
+ * lands past endTime and reverts). Throws when the transaction reverts.
+ */
+async function sendAndWait(tx: Record<string, unknown>): Promise<`0x${string}`> {
+	const hash = await rpc<`0x${string}`>("eth_sendTransaction", [tx]);
+	const deadline = Date.now() + 30_000;
+	for (;;) {
+		const receipt = await rpc<{ status: string } | null>("eth_getTransactionReceipt", [hash]);
+		if (receipt) {
+			if (receipt.status !== "0x1") throw new Error(`transaction ${hash} reverted`);
+			return hash;
+		}
+		if (Date.now() > deadline) throw new Error(`transaction ${hash} was not mined`);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+	}
+}
+
+/**
+ * Place a bid from any address by impersonation (no keys needed for bot wallets) and wait
+ * for it to be mined. `wait: false` only sends, for a test that has paused mining.
+ */
+export async function placeBidRaw(
+	auction: `0x${string}`,
+	from: `0x${string}`,
+	valueWei: bigint,
+	opts?: { gasPriceGwei?: number; wait?: boolean },
+) {
 	await rpc("anvil_impersonateAccount", [from]);
 	await rpc("anvil_setBalance", [from, hex(valueWei + 10n ** 18n)]);
-	await rpc("eth_sendTransaction", [
-		{
-			from,
-			to: auction,
-			value: hex(valueWei),
-			data: encodeFunctionData({ abi: auctionCallAbi, functionName: "placeBid" }),
-			gas: "0x7a120",
-			...(opts?.gasPriceGwei ? { gasPrice: hex(BigInt(opts.gasPriceGwei) * 10n ** 9n) } : {}),
-		},
-	]);
+	const tx = {
+		from,
+		to: auction,
+		value: hex(valueWei),
+		data: encodeFunctionData({ abi: auctionCallAbi, functionName: "placeBid" }),
+		gas: "0x7a120",
+		...(opts?.gasPriceGwei ? { gasPrice: hex(BigInt(opts.gasPriceGwei) * 10n ** 9n) } : {}),
+	};
+	if (opts?.wait === false) await rpc("eth_sendTransaction", [tx]);
+	else await sendAndWait(tx);
 }
 
 /** Deterministic throwaway bot addresses. */
@@ -122,34 +150,30 @@ export async function setAuctionOperator(
 	auction: `0x${string}`,
 	authorized: boolean,
 ) {
-	await rpc("eth_sendTransaction", [
-		{
-			from: OWNER,
-			to: nft,
-			data: encodeFunctionData({
-				abi: nftAdminAbi,
-				functionName: "setAuthorizedOperator",
-				args: [auction, authorized],
-			}),
-			gas: "0x30d40",
-		},
-	]);
+	await sendAndWait({
+		from: OWNER,
+		to: nft,
+		data: encodeFunctionData({
+			abi: nftAdminAbi,
+			functionName: "setAuthorizedOperator",
+			args: [auction, authorized],
+		}),
+		gas: "0x30d40",
+	});
 }
 
 /** Finalize a local auction batch from its owner without involving the frontend. */
 export async function finalizeRaw(auction: `0x${string}`, maxCount: bigint) {
-	await rpc("eth_sendTransaction", [
-		{
-			from: OWNER,
-			to: auction,
-			data: encodeFunctionData({
-				abi: auctionCallAbi,
-				functionName: "finalize",
-				args: [maxCount],
-			}),
-			gas: "0xe4e1c0",
-		},
-	]);
+	await sendAndWait({
+		from: OWNER,
+		to: auction,
+		data: encodeFunctionData({
+			abi: auctionCallAbi,
+			functionName: "finalize",
+			args: [maxCount],
+		}),
+		gas: "0xe4e1c0",
+	});
 }
 
 /**

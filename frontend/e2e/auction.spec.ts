@@ -69,7 +69,7 @@ test.describe("bidding", () => {
 		// below the new minimum and reverts on-chain (BidTooLow at execution time).
 		await rpc("evm_setAutomine", [false]);
 		await page.getByRole("button", { name: "place bid" }).click();
-		await placeBidRaw(S.auction, bot(99), eth(0.105), { gasPriceGwei: 100 });
+		await placeBidRaw(S.auction, bot(99), eth(0.105), { gasPriceGwei: 100, wait: false });
 		await rpc("evm_setAutomine", [true]);
 		await mine();
 
