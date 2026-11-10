@@ -1,12 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { encodeFunctionData, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 export const ANVIL_PORT = 8546;
 export const RPC_URL = `http://127.0.0.1:${ANVIL_PORT}`;
-export const E2E_DIR = __dirname;
+export const E2E_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 /** anvil's well-known dev keys (local test chain only). */
 export const ANVIL_KEYS = [
@@ -192,7 +193,11 @@ export async function installWallet(page: Page, account: `0x${string}`) {
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({ jsonrpc: "2.0", id: id++, method, params }),
 				});
-				const j = await res.json();
+				// Workers runtime types (.cloudflare/types) make Response.json() return unknown.
+				const j = (await res.json()) as {
+					result?: unknown;
+					error?: { message: string; code?: number; data?: unknown };
+				};
 				if (j.error) {
 					const e = new Error(j.error.message) as Error & { code?: number; data?: unknown };
 					e.code = j.error.code;

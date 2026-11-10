@@ -1,5 +1,5 @@
 // Boots anvil on port 8546 and deploys the full contract stack from the sibling Foundry
-// project's forge artifacts. Called by start-next.mjs BEFORE the Next dev server starts,
+// project's forge artifacts. Called by start-dev.mjs BEFORE the vinext dev server starts,
 // because Playwright launches the webServer before globalSetup runs.
 
 import { spawn } from "node:child_process";

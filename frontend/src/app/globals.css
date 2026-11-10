@@ -19,6 +19,10 @@
 	--signal:     #9f2f2d;
 	--up:         #1f7a4d;
 
+	/* fonts (self-hosted @fontsource packages, imported in layout.tsx) */
+	--font-hanken: "Hanken Grotesk Variable", "Helvetica Neue", Arial, sans-serif;
+	--font-jetbrains-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
 	/* motion */
 	--ease-out:   cubic-bezier(0.2, 0.8, 0.2, 1);
 	--dur-fast:   120ms;

@@ -1,5 +1,5 @@
-// Boots the anvil chain + contracts (setup-chain.mjs), then starts the Next dev server
-// with the env that deployment produced. Runs as Playwright's webServer command; Playwright
+// Boots the anvil chain + contracts (setup-chain.mjs), then starts the vinext dev server
+// (vite dev) with the env that deployment produced. Runs as Playwright's webServer command; Playwright
 // launches this before globalSetup, so the chain bootstrap lives here rather than there.
 
 import { spawn } from "node:child_process";
@@ -18,7 +18,7 @@ for (const line of fs.readFileSync(path.join(dir, ".env.e2e.local"), "utf8").spl
 	if (m) env[m[1]] = m[2];
 }
 
-const child = spawn("pnpm", ["exec", "next", "dev", "-p", "5471", "-H", "127.0.0.1"], {
+const child = spawn("pnpm", ["exec", "vite", "dev", "--port", "5471", "--host", "127.0.0.1", "--strictPort"], {
 	cwd: path.resolve(dir, ".."),
 	env,
 	stdio: "inherit",

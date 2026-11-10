@@ -1,0 +1,3 @@
+# Dependency build scripts: only workerd (the local Workers runtime used by vite dev/preview) runs one.
+onlyBuiltDependencies:
+  - workerd

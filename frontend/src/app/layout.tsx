@@ -1,24 +1,15 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Hanken_Grotesk } from "next/font/google";
+// Self-hosted fonts: vinext would load next/font/google from Google's CDN at runtime.
+// Mono for the small technical labels; Hanken Grotesk as the clean sans/serif base.
+import "@fontsource-variable/hanken-grotesk/wght.css";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
+import "@fontsource/jetbrains-mono/latin-700.css";
 import "./globals.css";
 import { Providers } from "./providers";
 import { themeInitScript } from "@/lib/themeScript";
 import { railMaxInitScript } from "@/lib/railMax";
 import { AUCTION_SITE_URL, OG_IMAGE_URL } from "@/lib/constants";
-
-// Mono for the small technical labels; Hanken Grotesk as the clean sans/serif base.
-const jetbrainsMono = JetBrains_Mono({
-	subsets: ["latin"],
-	weight: ["400", "500", "700"],
-	display: "swap",
-	variable: "--font-jetbrains-mono",
-});
-
-const hanken = Hanken_Grotesk({
-	subsets: ["latin"],
-	display: "swap",
-	variable: "--font-hanken",
-});
 
 const description =
 	"Bid on Season 2 of Panorama, an autonomous generative artwork. A collaboration between Yigit Duman and DeltaSauce.";
@@ -54,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
 	return (
-		<html lang="en" className={`${jetbrainsMono.variable} ${hanken.variable} h-full`} suppressHydrationWarning>
+		<html lang="en" className="h-full" suppressHydrationWarning>
 			<body className="antialiased h-full font-sans bg-background text-foreground">
 				<script dangerouslySetInnerHTML={{ __html: themeInitScript + railMaxInitScript }} />
 				<Providers>{children}</Providers>

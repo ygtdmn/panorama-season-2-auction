@@ -42,7 +42,8 @@ contracts/   Foundry project: the auction contract, the Panorama NFT + mint
              controller it mints from, 113 tests (unit, fuzz, invariant,
              atomic-settlement), lifecycle forge scripts, and shell tooling
              for monitoring and deployment manifests.
-frontend/    Standalone Next.js app: public bidding page (/auction),
+frontend/    Standalone Next.js app (built with vinext, served as a
+             Cloudflare Worker): public bidding page (/),
              wallet-gated owner console (/admin), and public recovery
              tools (/recovery). Vitest unit tests + anvil-backed
              Playwright e2e.

@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Anvil-backed end-to-end suite. globalSetup boots a local anvil chain (port 8546),
 // deploys Panorama + controller + the Season 2 auction from the sibling Foundry project's
 // forge artifacts (auto-detected in e2e/setup-chain.mjs), and writes e2e/.env.e2e.local;
-// the webServer then starts `next dev` against that chain. Tests snapshot/revert anvil
+// the webServer then starts the vinext dev server (`vite dev`) against that chain. Tests snapshot/revert anvil
 // state, so they run serially.
 
 export default defineConfig({
@@ -30,7 +30,7 @@ export default defineConfig({
 		},
 	],
 	webServer: {
-		command: "node e2e/start-next.mjs",
+		command: "node e2e/start-dev.mjs",
 		url: "http://127.0.0.1:5471/",
 		reuseExistingServer: false,
 		timeout: 180_000,
