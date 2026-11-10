@@ -7,8 +7,8 @@ export default defineConfig({
     name: "panorama-season-2-auction",
     // workers.dev only for now. Deploys enforce these fields, so a toggle flipped
     // in the dashboard comes back on the next push unless it is set here.
-    domains: [],
-    workersDev: true,
+    domains: ["season2.panorama.garden", "s2.panorama.garden"],
+    workersDev: false,
     previewUrls: false,
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-11-08",
