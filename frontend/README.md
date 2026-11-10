@@ -27,7 +27,7 @@ Against a real chain, copy `.env.example` to `.env` and fill in the values. `src
 pnpm run deploy # PANORAMA_PRODUCTION=1 build + deploy to Cloudflare (needs `npx cf auth login`)
 ```
 
-`cloudflare.config.ts` declares the Worker (workers.dev only for now: `domains: []`, `workersDev: true`, `previewUrls: false`; no KV, no Images binding, no secrets). The production build values are the committed `.env.production`; `scripts/deploy.mjs` copies them into the build's environment so a local `.env.local` cannot override them, and sets `PANORAMA_PRODUCTION=1` so the strict checks run.
+`cloudflare.config.ts` declares the Worker (custom domains season2.panorama.garden and s2.panorama.garden, `workersDev: false`, `previewUrls: false`; no KV, no Images binding, no secrets). A deploy applies these fields, so a dashboard toggle comes back on the next push unless the config agrees. Workers Builds deploys every push to main (root directory `frontend`, no build command, deploy command `pnpm run deploy`, preview builds off, `NODE_VERSION` 24); `pnpm run deploy` also works by hand. The production build values are the committed `.env.production`; `scripts/deploy.mjs` copies them into the build's environment so a local `.env.local` cannot override them, and sets `PANORAMA_PRODUCTION=1` so the strict checks run.
 
 ## Design decisions
 
