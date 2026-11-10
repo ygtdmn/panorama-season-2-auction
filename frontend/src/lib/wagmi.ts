@@ -15,21 +15,32 @@ export const TARGET_CHAIN: Chain =
 // the public lists below are a degraded fallback, not a launch configuration.
 const CLIENT_RPC_OVERRIDE = ENV.rpcUrl;
 
-const mainnetTransport = fallback([
-	...(TARGET_CHAIN.id === mainnet.id && CLIENT_RPC_OVERRIDE ? [http(CLIENT_RPC_OVERRIDE)] : []),
-	http("https://ethereum-rpc.publicnode.com"),
-	http("https://1rpc.io/eth"),
-	http("https://rpc.mevblocker.io"),
-	http("https://rpc.flashbots.net"),
-	http("https://eth.meowrpc.com"),
-	http("https://eth.drpc.org"),
-	http("https://eth.merkle.io"),
-	http("https://endpoints.omniatech.io/v1/eth/mainnet/public"),
-	http("https://0xrpc.io/eth"),
-	http("https://rpc.payload.de"),
-	http("https://rpc.public.curie.radiumblock.co/http/ethereum"),
-	http("https://eth.blockrazor.xyz"),
-]);
+// Free public RPCs, scored 2026-11-10 from a browser origin (CORS, eth_call, JSON-RPC batch,
+// eth_getLogs over 1k/10k/50k/full ranges). The first three answer a full-history getLogs in
+// one call; most others refuse wide log ranges. No per-endpoint retries: a refusal moves
+// straight to the next endpoint instead of backing off on one that will not answer.
+const RPC_OPTIONS = { retryCount: 0, timeout: 10_000 } as const;
+
+const PUBLIC_MAINNET_RPCS = [
+	"https://gateway.tenderly.co/public/mainnet",
+	"https://mainnet.gateway.tenderly.co",
+	"https://ethereum-json-rpc.stakely.io",
+	"https://rpc.mevblocker.io/fast",
+	"https://eth.api.pocket.network",
+	"https://ethereum-rpc.publicnode.com",
+	"https://eth.drpc.org",
+	"https://1.rpc.thirdweb.com",
+	"https://eth.blockrazor.xyz",
+	"https://0xrpc.io/eth",
+];
+
+// The override (NEXT_PUBLIC_RPC_URL) goes first; a URL already in the public list is not tried twice.
+const mainnetTransport = fallback(
+	[...new Set([...(TARGET_CHAIN.id === mainnet.id && CLIENT_RPC_OVERRIDE ? [CLIENT_RPC_OVERRIDE] : []), ...PUBLIC_MAINNET_RPCS])].map((url) =>
+		http(url, RPC_OPTIONS),
+	),
+	{ retryCount: 1 },
+);
 
 const sepoliaTransport = fallback([
 	...(TARGET_CHAIN.id === sepolia.id && CLIENT_RPC_OVERRIDE ? [http(CLIENT_RPC_OVERRIDE)] : []),
